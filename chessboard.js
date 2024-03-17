@@ -4,7 +4,13 @@ class ChessBoard {
     this.events = {};
     this.orientation = "b";
     this.initialise();
-    this.start();
+    this.display.addEventListener("click", (e) => this.emit("click", e));
+    document
+      .getElementById("flipBtn")
+      .addEventListener("click", this.flip.bind(this));
+    document
+      .getElementById("startBtn")
+      .addEventListener("click", () => this.emit("start"));
   }
   initialise() {
     for (let row = 0; row < 8; row++) {
@@ -22,10 +28,6 @@ class ChessBoard {
   }
   start(position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR") {
     this.setPosition(position);
-    this.display.addEventListener("click", (e) => this.emit("click", e));
-    document
-      .getElementById("flipBtn")
-      .addEventListener("click", this.flip.bind(this));
   }
   subscribe(event, callback) {
     if (this.events[event]) {
@@ -35,7 +37,7 @@ class ChessBoard {
     }
   }
   emit(event, data) {
-    console.log("🚀 ~ ChessBoard ~ emit ~ this.events:", this.events);
+    if (!this.events[event]) return console.log(`No subscribers for ${event}`);
     this.events[event].forEach((callback) => callback(data));
   }
   clear() {
@@ -138,13 +140,13 @@ class ChessBoard {
   }
 }
 
-const board = new ChessBoard();
-board.subscribe("click", (e) => console.log("🚀 ~ e", e));
-console.log("🚀 ~ getPosition:", board.getPosition());
-setTimeout(() => board.movePiece({ row: 1, col: 0 }, { row: 3, col: 0 }), 1000);
-board.highlightSquares([
-  { row: 1, col: 0 },
-  { row: 3, col: 0 },
-]);
+// const board = new ChessBoard();
+// board.subscribe("click", (e) => console.log("🚀 ~ e", e));
+// console.log("🚀 ~ getPosition:", board.getPosition());
+// setTimeout(() => board.movePiece({ row: 1, col: 0 }, { row: 3, col: 0 }), 1000);
+// board.highlightSquares([
+//   { row: 1, col: 0 },
+//   { row: 3, col: 0 },
+// ]);
 
-console.log(board.display.children);
+// console.log(board.display.children);
