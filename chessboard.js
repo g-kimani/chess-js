@@ -4,7 +4,12 @@ class ChessBoard {
     this.events = {};
     this.orientation = "b";
     this.initialise();
-    this.display.addEventListener("click", (e) => this.emit("click", e));
+    this.display.addEventListener("click", (e) => {
+      const square = e.target.closest(".square");
+      const row = parseInt(square.dataset.row);
+      const col = parseInt(square.dataset.col);
+      this.emit("click", [row, col]);
+    });
     document
       .getElementById("flipBtn")
       .addEventListener("click", this.flip.bind(this));
@@ -121,15 +126,39 @@ class ChessBoard {
       piece.style.transition = "none";
     }, 300);
   }
-  highlightSquares(squares) {
+  highlightSquares(squares, type = "default") {
     squares.forEach((square) => {
+      const [row, col] = square;
       const squareElement = this.display.querySelector(
-        `[data-row="${square.row}"][data-col="${square.col}"]`
+        `[data-row="${row}"][data-col="${col}"]`
       );
       const highlight = document.createElement("span");
       highlight.classList.add("highlight");
+      if (squareElement.querySelector(".piece") && type === "move") {
+        highlight.classList.add("capture");
+      }
+      switch (type) {
+        case "move":
+          highlight.classList.add("move");
+          break;
+        case "enpassant":
+          highlight.classList.add("enpassant");
+          break;
+        case "castle":
+          highlight.classList.add("castle");
+          break;
+        case "promotion":
+          highlight.classList.add("promotion");
+          break;
+        default:
+          highlight.classList.add("default");
+      }
       squareElement.appendChild(highlight);
     });
+  }
+  clearHighlights() {
+    const highlights = this.display.querySelectorAll(".highlight");
+    highlights.forEach((highlight) => highlight.remove());
   }
   flip() {
     this.orientation = this.orientation === "w" ? "b" : "w";

@@ -4,36 +4,6 @@ class Player {
     this.color = color;
   }
 }
-class ChessAbaba {
-  constructor() {
-    this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
-    this.players = [
-      new Player("player1", "white"),
-      new Player("player2", "black"),
-    ];
-    this.currentPlayer = 0;
-    this.display = new ChessBoard();
-  }
-  nextPlayer() {
-    this.currentPlayer = 1 - this.currentPlayer;
-  }
-  movePiece(from, to) {
-    const piece = this.board[from[0]][from[1]];
-    if (piece === null) {
-      return false;
-    }
-    if (piece.color !== this.turn) {
-      return false;
-    }
-    if (piece.canMove(from, to, this.board)) {
-      this.board[to[0]][to[1]] = piece;
-      this.board[from[0]][from[1]] = null;
-      this.turn = this.turn === "white" ? "black" : "white";
-      return true;
-    }
-    return false;
-  }
-}
 
 class Chess {
   constructor() {
@@ -42,8 +12,11 @@ class Chess {
     this.currentPlayer = 0;
     this.display = new ChessBoard();
     this.display.subscribe("start", () => this.start());
+    this.display.subscribe("click", (square) => this.handleClick(square));
     this.halfMoveClock = 0; // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule.
     this.fullmoveNumber = 1;
+    this.selected = null;
+    this.legalMoves = [];
   }
   start() {
     this.display.start();
@@ -54,6 +27,9 @@ class Chess {
   }
   turn() {
     return this.players[this.currentPlayer].color;
+  }
+  nextPlayer() {
+    this.currentPlayer = 1 - this.currentPlayer;
   }
   fen() {
     let pieces = "";
@@ -205,6 +181,58 @@ class Chess {
     if (piece.color !== this.turn()) {
       return false;
     }
+
+    let isCapture = this.board[toRow][toCol] !== null;
+
+    const legalMoves = piece.legalMoves(this.board);
+    if (legalMoves.some((move) => move[0] === toRow && move[1] === toCol)) {
+      this.board[toRow][toCol] = piece;
+      this.board[fromRow][fromCol] = null;
+      piece.position = to;
+      piece.moved = true;
+      this.display.movePiece(
+        { row: fromRow, col: fromCol },
+        { row: toRow, col: toCol }
+      );
+      this.nextPlayer();
+
+      if (piece.type === "pawn" || isCapture) {
+        this.halfMoveClock = 0;
+      }
+      if (piece.color === "b") {
+        this.fullmoveNumber++;
+      }
+      return true;
+    }
+  }
+  handleClick(square) {
+    if (this.selected) {
+      const isLegal = this.legalMoves.some(
+        (move) => move[0] === square[0] && move[1] === square[1]
+      );
+      if (isLegal) {
+        const moved = this.movePiece(this.selected, square);
+        if (moved) {
+          this.selected = null;
+          this.display.clearHighlights();
+        }
+      } else {
+        this.selectSquare(square);
+      }
+    } else {
+      this.selectSquare(square);
+    }
+  }
+  selectSquare(square) {
+    this.display.clearHighlights();
+    const piece = this.get(square);
+    if (piece && piece.color === this.turn()) {
+      this.display.highlightSquares([square]);
+      this.selected = square;
+      const legalMoves = piece.legalMoves(this.board);
+      this.legalMoves = legalMoves;
+      this.display.highlightSquares(legalMoves, "move");
+    }
   }
 }
 
@@ -226,11 +254,63 @@ class Pawn extends Piece {
   constructor(color, position) {
     super("pawn", color, position);
   }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const direction = this.color === "w" ? -1 : 1;
+
+    if (board[row + direction][col] === null) {
+      moves.push([row + direction, col]);
+      if (!this.moved && board[row + 2 * direction][col] === null) {
+        moves.push([row + 2 * direction, col]);
+      }
+    }
+    let target = board[row + direction][col - 1];
+    if (col > 0 && target !== null && target.color !== this.color) {
+      moves.push([row + direction, col - 1]);
+    }
+    target = board[row + direction][col + 1];
+    if (col < 7 && target !== null && target.color !== this.color) {
+      moves.push([row + direction, col + 1]);
+    }
+    return moves;
+  }
 }
 
 class Rook extends Piece {
   constructor(color, position) {
     super("rook", color, position);
+  }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const directions = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    for (let [rowDir, colDir] of directions) {
+      let [targetRow, targetCol] = [row + rowDir, col + colDir];
+      while (
+        targetRow >= 0 &&
+        targetRow < 8 &&
+        targetCol >= 0 &&
+        targetCol < 8
+      ) {
+        if (board[targetRow][targetCol] === null) {
+          moves.push([targetRow, targetCol]);
+        } else {
+          if (board[targetRow][targetCol].color !== this.color) {
+            moves.push([targetRow, targetCol]);
+          }
+          break;
+        }
+        targetRow += rowDir;
+        targetCol += colDir;
+      }
+    }
+    return moves;
   }
 }
 
@@ -238,11 +318,69 @@ class Knight extends Piece {
   constructor(color, position) {
     super("night", color, position);
   }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const directions = [
+      [1, 2],
+      [1, -2],
+      [-1, 2],
+      [-1, -2],
+      [2, 1],
+      [2, -1],
+      [-2, 1],
+      [-2, -1],
+    ];
+    for (let [rowDir, colDir] of directions) {
+      let [targetRow, targetCol] = [row + rowDir, col + colDir];
+      if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
+        if (board[targetRow][targetCol] === null) {
+          moves.push([targetRow, targetCol]);
+        } else {
+          if (board[targetRow][targetCol].color !== this.color) {
+            moves.push([targetRow, targetCol]);
+          }
+        }
+      }
+    }
+    return moves;
+  }
 }
 
 class Bishop extends Piece {
   constructor(color, position) {
     super("bishop", color, position);
+  }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const directions = [
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+    for (let [rowDir, colDir] of directions) {
+      let [targetRow, targetCol] = [row + rowDir, col + colDir];
+      while (
+        targetRow >= 0 &&
+        targetRow < 8 &&
+        targetCol >= 0 &&
+        targetCol < 8
+      ) {
+        if (board[targetRow][targetCol] === null) {
+          moves.push([targetRow, targetCol]);
+        } else {
+          if (board[targetRow][targetCol].color !== this.color) {
+            moves.push([targetRow, targetCol]);
+          }
+          break;
+        }
+        targetRow += rowDir;
+        targetCol += colDir;
+      }
+    }
+    return moves;
   }
 }
 
@@ -250,11 +388,73 @@ class Queen extends Piece {
   constructor(color, position) {
     super("queen", color, position);
   }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const directions = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+    for (let [rowDir, colDir] of directions) {
+      let [targetRow, targetCol] = [row + rowDir, col + colDir];
+      while (
+        targetRow >= 0 &&
+        targetRow < 8 &&
+        targetCol >= 0 &&
+        targetCol < 8
+      ) {
+        if (board[targetRow][targetCol] === null) {
+          moves.push([targetRow, targetCol]);
+        } else {
+          if (board[targetRow][targetCol].color !== this.color) {
+            moves.push([targetRow, targetCol]);
+          }
+          break;
+        }
+        targetRow += rowDir;
+        targetCol += colDir;
+      }
+    }
+    return moves;
+  }
 }
 
 class King extends Piece {
   constructor(color, position) {
     super("king", color, position);
+  }
+  legalMoves(board) {
+    const [row, col] = this.position;
+    const moves = [];
+    const directions = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [1, 1],
+      [1, -1],
+      [-1, 1],
+      [-1, -1],
+    ];
+    for (let [rowDir, colDir] of directions) {
+      let [targetRow, targetCol] = [row + rowDir, col + colDir];
+      if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
+        if (board[targetRow][targetCol] === null) {
+          moves.push([targetRow, targetCol]);
+        } else {
+          if (board[targetRow][targetCol].color !== this.color) {
+            moves.push([targetRow, targetCol]);
+          }
+        }
+      }
+    }
+    return moves;
   }
 }
 
