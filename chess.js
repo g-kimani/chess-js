@@ -10,7 +10,7 @@ class Player {
 class Chess {
   constructor(position = STARTING_POSITION, hidden_display = false) {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
-    this.players = [new Player("player1", "w"), new Player("player2", "b")];
+    this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.currentPlayer = 0;
     this.display = new ChessBoard(hidden_display);
     this.display.subscribe("start", () => this.start(position));
@@ -43,6 +43,7 @@ class Chess {
   }
   nextPlayer() {
     this.currentPlayer = 1 - this.currentPlayer;
+    this.display.updateTurn(this.players[this.currentPlayer].name);
   }
   fen() {
     let pieces = "";
@@ -189,7 +190,9 @@ class Chess {
         moves = this.generateQueenMoves(square, board);
         break;
       case "king":
+        console.log("🚀 ~ Chess ~ getLegalMoves ~ board:", board);
         moves = this.generateKingMoves(square, board);
+        console.log("🚀 ~ Chess ~ getLegalMoves ~ moves:", moves);
         break;
       default:
         break;
@@ -203,6 +206,7 @@ class Chess {
       const boardCopy = this.board.map((row) => row.slice());
       const [row, col] = move;
       boardCopy[row][col] = piece;
+      boardCopy[row][col].position = move;
       boardCopy[square[0]][square[1]] = null;
       const playerKing = this.getKing(piece.color);
       if (this.kingInCheck(playerKing.color, boardCopy)) {
@@ -218,6 +222,12 @@ class Chess {
       this.oppositeColor(color),
       king.position,
       board
+    );
+  }
+  isCheckmate(color) {
+    return (
+      this.kingInCheck(color) &&
+      this.getLegalMoves(this.getKing(color).position).length === 0
     );
   }
   pieceCanMove(from, to, board = this.board) {
@@ -287,7 +297,6 @@ class Chess {
         // en passant
         this.enpassant = to;
       }
-      this.nextPlayer();
 
       // castling rights
       this.updateCastlingRights(piece, from);
@@ -302,6 +311,21 @@ class Chess {
       if (piece.color === "b") {
         this.fullmoveNumber++;
       }
+
+      const opponent = this.oppositeColor(this.turn());
+      // check king in check
+      if (this.kingInCheck(opponent)) {
+        this.display.updateStatus(`${opponent} is in check!`);
+      } else {
+        this.display.updateStatus("");
+      }
+
+      // check for checkmate
+      if (this.isCheckmate(opponent)) {
+        this.display.updateStatus(`${opponent} is in checkmate!`);
+      }
+      this.nextPlayer();
+
       return true;
     }
   }
@@ -496,23 +520,25 @@ class Chess {
     const [row, col] = square;
     const king = board[row][col];
     const moves = [];
-    const directions = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-      [1, 1],
-      [1, -1],
-      [-1, 1],
-      [-1, -1],
-    ];
-    for (let [rowDir, colDir] of directions) {
-      let [targetRow, targetCol] = [row + rowDir, col + colDir];
-      if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
-        if (board[targetRow][targetCol] === null) {
-          moves.push([targetRow, targetCol]);
-        } else {
-          if (board[targetRow][targetCol].color !== king.color) {
+
+    for (let rowDir of [-1, 0, 1]) {
+      for (let colDir of [-1, 0, 1]) {
+        if (rowDir === 0 && colDir === 0) continue; // skip the king's position
+
+        let [targetRow, targetCol] = [row + rowDir, col + colDir];
+        console.log(
+          "🚀 ~ Chess ~ generateKingMoves ~ targetRow, targetCol:",
+          targetRow,
+          targetCol
+        );
+        if (
+          targetRow >= 0 &&
+          targetRow < 8 &&
+          targetCol >= 0 &&
+          targetCol < 8
+        ) {
+          const targetPiece = board[targetRow][targetCol];
+          if (!targetPiece || targetPiece.color !== king.color) {
             moves.push([targetRow, targetCol]);
           }
         }

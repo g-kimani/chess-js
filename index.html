@@ -11,12 +11,15 @@
 <body>
     <div id="chessboard"></div>
     <div id="controls">
+        <h2>Status: <span id="status"></span></h2>
+        <h2>Turn: <span id="turn"></span></h2>
         <label for="fen">FEN:
             <input id="fen" type="text" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR">
         </label>
         <button id="startBtn">Start</button>
         <button id="clearBtn">Clear</button>
         <button id="flipBtn">Flip</button>
+        <button id="fenBtn">Get FEN</button>
     </div>
     <script src="./chessboard.js"></script>
     <script src="./chess.js"></script>

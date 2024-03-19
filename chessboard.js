@@ -170,6 +170,12 @@ class ChessBoard {
     this.clear();
     this.setPosition(flippedPosition);
   }
+  updateStatus(status) {
+    document.getElementById("status").textContent = status;
+  }
+  updateTurn(turn) {
+    document.getElementById("turn").textContent = turn;
+  }
 }
 
 // const board = new ChessBoard();
