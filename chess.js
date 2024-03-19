@@ -22,8 +22,10 @@ class Chess {
     this.enpassant = null;
   }
   start() {
-    this.display.start();
-    this.load(STARTING_POSITION);
+    const fenInput = document.getElementById("fen");
+    const fen = fenInput.value;
+    this.display.start(fen);
+    this.load(fen);
   }
   clear() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
@@ -78,6 +80,7 @@ class Chess {
     console.log("loading fen", fen);
     this.clear();
     let [pieces, turn, castlingRights] = fen.split(" ");
+    this.currentPlayer = turn === "w" ? 0 : 1;
     let rows = pieces.split("/");
     for (let row = 0; row < 8; row++) {
       let col = 0;
@@ -548,7 +551,6 @@ class King extends Piece {
 }
 
 const game = new Chess();
-console.log(validateFen("8/8/8/8/8/51/8/8 w - - 0 1"));
 console.log("🚀 ~ game.fen()", game.fen());
 console.log("🚀 ~ game.getCastlingRights('w')", game.getCastlingRights("b"));
 
