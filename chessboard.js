@@ -1,5 +1,5 @@
 class ChessBoard {
-  constructor() {
+  constructor(hidden = false) {
     this.display = document.getElementById("chessboard");
     this.events = {};
     this.orientation = "b";
@@ -16,6 +16,9 @@ class ChessBoard {
     document
       .getElementById("startBtn")
       .addEventListener("click", () => this.emit("start"));
+    if (hidden) {
+      this.display.style.display = "hidden";
+    }
   }
   initialise() {
     for (let row = 0; row < 8; row++) {
