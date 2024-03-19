@@ -331,6 +331,29 @@ class Chess {
   }
   updateCastlingRights(piece, from) {
     const [fromRow, fromCol] = from;
+    // queen side rook
+    // need to make sure the rook hasn't moved and there are no pieces in between
+    //rook = this.board[fromRow][0];
+    // knight = this.board[fromRow][1];
+    // bishop = this.board[fromRow][2];
+    // queen = this.board[fromRow][3];
+    if (piece.type === "king") {
+      if (piece.color === "w") {
+        this.castlingRights.w.K = false;
+        this.castlingRights.w.Q = false;
+      } else {
+        this.castlingRights.b.k = false;
+        this.castlingRights.b.q = false;
+      }
+    }
+    let queenSide = true;
+    for (let i = 1; i < 4; i++) {
+      if (this.board[fromRow][i] !== null) {
+        queenSide = false;
+        break;
+      }
+    }
+
     if (piece.type === "king") {
       if (piece.color === "w") {
         this.castlingRights.w.K = false;
