@@ -11,6 +11,8 @@ body {
   background-color: #222;
 }
 
+/* Chessboard */
+
 .square {
   width: 100%;
   display: flex;
@@ -65,4 +67,18 @@ body {
   border-radius: 50%;
   width: 85%;
   height: 85%;
+}
+
+/* Controls */
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-direction: column;
+  background-color: #eae9d2;
+  padding: 20px 10px;
+  margin: 5px;
+  border-radius: 10px;
 }
