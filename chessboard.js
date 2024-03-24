@@ -30,6 +30,26 @@ class ChessBoard {
         const squareColor =
           (row + col) % 2 === 0 ? "light-square" : "dark-square";
         square.classList.add(squareColor);
+        if (col === 0) {
+          const label = document.createElement("span");
+          label.classList.add("rank-label", "label");
+          if (this.orientation === "w") {
+            label.textContent = row + 1;
+          } else {
+            label.textContent = 8 - row;
+          }
+          square.appendChild(label);
+        }
+        if (row === 7) {
+          const label = document.createElement("span");
+          label.classList.add("file-label", "label");
+          if (this.orientation === "w") {
+            label.textContent = String.fromCharCode(104 - col);
+          } else {
+            label.textContent = String.fromCharCode(97 + col);
+          }
+          square.appendChild(label);
+        }
         this.display.appendChild(square);
       }
     }
@@ -68,7 +88,11 @@ class ChessBoard {
             `[data-row="${tRow}"][data-col="${tCol}"]`
           );
           const color = piece === piece.toUpperCase() ? "w" : "b";
-          square.innerHTML = `<img class="piece" src="assets/chess-pieces/${color}${piece.toLowerCase()}.png" alt="${piece}" />`;
+          const image = document.createElement("img");
+          image.src = `assets/chess-pieces/${color}${piece.toLowerCase()}.png`;
+          image.alt = piece;
+          image.classList.add("piece");
+          square.appendChild(image);
           tCol++;
         }
       }
@@ -128,6 +152,15 @@ class ChessBoard {
       piece.style.transform = "none";
       piece.style.transition = "none";
     }, 300);
+  }
+  removePiece(square) {
+    const squareElement = this.display.querySelector(
+      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+    );
+    const piece = squareElement.querySelector(".piece");
+    if (piece) {
+      piece.remove();
+    }
   }
   highlightSquares(squares, type = "default") {
     squares.forEach((square) => {

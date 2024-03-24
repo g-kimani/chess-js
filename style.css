@@ -1,3 +1,12 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap");
+
+.roboto-mono-variable {
+  font-family: "Roboto Mono", monospace;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-style: normal;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -67,6 +76,24 @@ body {
   border-radius: 50%;
   width: 85%;
   height: 85%;
+}
+
+.label {
+  position: absolute;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px #000;
+  z-index: 20;
+}
+
+.rank-label {
+  top: 5px;
+  left: 5px;
+}
+
+.file-label {
+  bottom: 5px;
+  right: 5px;
 }
 
 /* Controls */

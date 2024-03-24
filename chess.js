@@ -1,5 +1,6 @@
-// const STARTING_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-const STARTING_POSITION = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+const STARTING_POSITION =
+  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+// const STARTING_POSITION = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
 class Player {
   constructor(name, color) {
@@ -45,6 +46,27 @@ class Chess {
         );
       });
     });
+    document.getElementById("statsBtn").addEventListener("click", () => {
+      console.log(this.getStats());
+    });
+  }
+  getStats() {
+    return {
+      board: this.board,
+      currentPlayer: this.currentPlayer,
+      halfMoveClock: this.halfMoveClock,
+      fullmoveNumber: this.fullmoveNumber,
+      castlingRights: this.castlingRights,
+      colorsInCheck: this.colorsInCheck,
+      enpassant: this.enpassant,
+      legalMoves: this.legalMoves,
+      selected: this.selected,
+      inCheck: {
+        w: this.inCheck("w"),
+        b: this.inCheck("b"),
+      },
+      enpassant: this.enpassant,
+    };
   }
   start() {
     const fenInput = document.getElementById("fen");
@@ -93,6 +115,16 @@ class Chess {
       castlingRights = "-";
     }
 
+    let enpassantSquare;
+    // en passant square
+    if (this.enpassant) {
+      const [enpassantRow, enpassantCol] = this.enpassant;
+      const files = "abcdefgh";
+      const enpassantFile = files[enpassantCol];
+      enpassantSquare = `${enpassantFile}${8 - enpassantRow}`;
+    } else {
+      enpassantSquare = "-";
+    }
     const fen =
       pieces + // actual board
       " " +
@@ -100,7 +132,7 @@ class Chess {
       " " +
       castlingRights + // castling rights
       " " +
-      "-" + // en passant square
+      enpassantSquare + // en passant square
       " " +
       String(this.halfMoveClock) + // halfmove clock
       " " +
@@ -110,7 +142,7 @@ class Chess {
   load(fen) {
     this.clear();
     fen = normaliseFen(fen);
-    let [pieces, turn, castlingRights] = fen.split(" ");
+    let [pieces, turn, castlingRights, enpassant] = fen.split(" ");
     this.currentPlayer = turn === "b" ? 1 : 0;
     let rows = pieces.split("/");
 
@@ -158,6 +190,14 @@ class Chess {
         this.castlingRights[color][side] = true;
       }
     }
+
+    if (enpassant && enpassant !== "-") {
+      const files = "abcdefgh";
+      const enpassantFile = enpassant[0];
+      const enpassantRow = parseInt(enpassant[1]);
+      const enpassantCol = files.indexOf(enpassantFile);
+      this.enpassant = [enpassantRow - 1, enpassantCol];
+    }
     this.display.setPosition(fen);
   }
   getSquare(square) {
@@ -189,6 +229,17 @@ class Chess {
     if (validate && !this.hasMove(legalMoves, to)) {
       console.log("Illegal move");
       return false;
+    }
+    // en passant capture
+    if (
+      piece.type === "pawn" &&
+      to[1] !== from[1] &&
+      this.board[toRow][toCol] === null
+    ) {
+      const captureRow = piece.color === "w" ? toRow + 1 : toRow - 1;
+      console.log("Enpassant capture", captureRow, toCol);
+      this.board[captureRow][toCol] = null;
+      this.display.removePiece([captureRow, toCol]);
     }
 
     this.board[toRow][toCol] = piece;
@@ -226,10 +277,15 @@ class Chess {
       }
     }
 
+    // setting en passant square
     if (piece.type === "pawn" && Math.abs(fromRow - toRow) === 2) {
       // en passant
       // if the pawn moves two squares, it can be captured by an enemy pawn
-      this.enpassant = to;
+      const direction = piece.color === "w" ? -1 : 1;
+      this.enpassant = [toRow + direction * -1, toCol];
+    } else {
+      // reset en passant square
+      this.enpassant = null;
     }
 
     // castling rights
@@ -302,6 +358,10 @@ class Chess {
         castlingRights += side;
       }
     });
+
+    if (color === "w") {
+      castlingRights = castlingRights.toUpperCase();
+    }
     return castlingRights;
   }
   updateCastlingRights(piece, from) {
@@ -371,6 +431,7 @@ class Chess {
     );
   }
   isCheckmate(color) {
+    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT PROTECT THE KING
     return (
       this.inCheck(color) &&
       this.getLegalMoves(this.getKing(color).position).length === 0
@@ -383,6 +444,7 @@ class Chess {
       });
     });
   }
+
   /* PIECE MOVEMENT */
   getLegalMoves(square, board = this.board, pseudo = false) {
     const [row, col] = square;
@@ -455,6 +517,18 @@ class Chess {
     if (col < 7 && target !== null && target.color !== pawn.color) {
       moves.push([row + direction, col + 1]);
     }
+
+    // en passant
+    if (this.enpassant) {
+      const [enpassantRow, enpassantCol] = this.enpassant;
+      if (
+        Math.abs(col - enpassantCol) === 1 &&
+        row + direction === enpassantRow
+      ) {
+        moves.push(this.enpassant);
+      }
+    }
+
     return moves;
   }
   generateRookMoves(square, board) {
