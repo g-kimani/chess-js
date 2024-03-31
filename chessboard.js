@@ -3,7 +3,8 @@ class ChessBoard {
     this.display = document.getElementById("chessboard");
     this.events = {};
     this.orientation = "b";
-    this.initialise();
+    this.promotionSquare = null;
+    // this.initialise();
     this.display.addEventListener("click", (e) => {
       const square = e.target.closest(".square");
       const row = parseInt(square.dataset.row);
@@ -21,6 +22,7 @@ class ChessBoard {
     }
   }
   initialise() {
+    console.count("initialise");
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
         const square = document.createElement("div");
@@ -53,6 +55,21 @@ class ChessBoard {
         this.display.appendChild(square);
       }
     }
+    this.setupEventListeners();
+  }
+  setupEventListeners() {
+    console.count("setupEventListeners");
+    const selector = document.getElementById("promotion");
+    const closeBtn = selector.querySelector(".close");
+    closeBtn.addEventListener("click", this.hidePromotionSelection);
+    const pieceBtns = selector.querySelectorAll(".promotion-btn");
+    pieceBtns.forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.emit("promotion", btn.id, this.promotionSquare);
+        this.hidePromotionSelection();
+      });
+    });
   }
   start(position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR") {
     this.setPosition(position);
@@ -64,9 +81,10 @@ class ChessBoard {
       this.events[event] = [callback];
     }
   }
-  emit(event, data) {
-    if (!this.events[event]) return console.log(`No subscribers for ${event}`);
-    this.events[event].forEach((callback) => callback(data));
+  emit(event, ...data) {
+    if (!this.events[event])
+      return console.trace(`No subscribers for ${event} | ${data}`);
+    this.events[event].forEach((callback) => callback(...data));
   }
   clear() {
     this.display.innerHTML = "";
@@ -161,6 +179,56 @@ class ChessBoard {
     if (piece) {
       piece.remove();
     }
+  }
+  addPiece(square, piece) {
+    const squareElement = this.display.querySelector(
+      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+    );
+    const image = document.createElement("img");
+    image.src = `assets/chess-pieces/${piece.color}${piece.type[0]}.png`;
+    image.alt = piece.type;
+    image.classList.add("piece");
+    squareElement.appendChild(image);
+  }
+  setPiece(square, piece) {
+    const squareElement = this.display.querySelector(
+      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+    );
+    const image = squareElement.querySelector(".piece");
+    if (image) {
+      image.src = `assets/chess-pieces/${piece.color}${piece.type[0]}.png`;
+      image.alt = piece.type;
+    } else {
+      this.addPiece(square, piece);
+    }
+  }
+  showPromotionSelection(square, color) {
+    const squareElement = this.display.querySelector(
+      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+    );
+    this.promotionSquare = square;
+    const selector = document.getElementById("promotion");
+    selector.classList.toggle("hidden");
+    const buttons = selector.querySelectorAll(".promotion-btn");
+    buttons.forEach((button) => {
+      const image = button.querySelector("img");
+      image.src = `assets/chess-pieces/${color}${button.id[0]}.png`;
+    });
+    if (square[0] < 4) {
+      selector.style.top = `${
+        squareElement.offsetTop + squareElement.offsetHeight
+      }px`;
+    } else {
+      selector.style.top = `${
+        squareElement.offsetTop - selector.offsetHeight
+      }px`;
+    }
+    // selector.style.top = `${squareElement.offsetTop}px`;
+    selector.style.left = `${squareElement.offsetLeft}px`;
+  }
+  hidePromotionSelection() {
+    const selector = document.getElementById("promotion");
+    selector.classList.add("hidden");
   }
   highlightSquares(squares, type = "default") {
     squares.forEach((square) => {

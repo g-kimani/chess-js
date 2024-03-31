@@ -9,7 +9,24 @@
 </head>
 
 <body class="roboto-mono-variable">
-    <div id="chessboard"></div>
+    <div style="position:relative;">
+        <div id="chessboard"></div>
+        <div id="promotion" class="hidden">
+            <button id="queen" class="promotion-btn">
+                <img src="./assets/chess-pieces/wq.png" alt="Queen">
+            </button>
+            <button id="rook" class="promotion-btn">
+                <img src="./assets/chess-pieces/wr.png" alt="Rook">
+            </button>
+            <button id="bishop" class="promotion-btn">
+                <img src="./assets/chess-pieces/wb.png" alt="Bishop">
+            </button>
+            <button id="night" class="promotion-btn">
+                <img src="./assets/chess-pieces/wn.png" alt="Knight">
+            </button>
+            <button class="close">Close</button>
+        </div>
+    </div>
     <div id="controls">
         <h2>Status: <span id="status"></span></h2>
         <h2>Turn: <span id="turn"></span></h2>

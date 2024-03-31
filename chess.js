@@ -1,6 +1,6 @@
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-// const STARTING_POSITION = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+// const STARTING_POSITION = "8/5kP1/8/8/8/8/K7/8 w - - 0 1";
 
 class Player {
   constructor(name, color) {
@@ -17,6 +17,7 @@ class Chess {
     this.display = new ChessBoard(hidden_display);
     this.display.subscribe("start", () => this.start(position));
     this.display.subscribe("click", (square) => this.handleClick(square));
+    this.display.subscribe("promotion", this.handlePromotion.bind(this));
     this.halfMoveClock = 0; // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule.
     this.fullmoveNumber = 1;
     this.selected = null;
@@ -207,6 +208,51 @@ class Chess {
   oppositeColor(color) {
     return color === "w" ? "b" : "w";
   }
+  handlePromotion(pieceType, square) {
+    const [row, col] = square;
+    const pieceRow = this.turn() === "w" ? 1 : 6;
+    const piece = this.board[pieceRow][col];
+    if (piece.color !== this.turn()) {
+      return false;
+    }
+    const isCapture = this.board[row][col] !== null;
+
+    this.board[row][col] = null;
+    let newPiece;
+    switch (pieceType) {
+      case "queen":
+        newPiece = new Queen(piece.color, [row, col]);
+        break;
+      case "rook":
+        newPiece = new Rook(piece.color, [row, col]);
+        break;
+      case "bishop":
+        newPiece = new Bishop(piece.color, [row, col]);
+        break;
+      case "night":
+        newPiece = new Knight(piece.color, [row, col]);
+        break;
+    }
+    this.board[pieceRow][col] = null;
+    this.display.removePiece([pieceRow, col]);
+    this.board[row][col] = newPiece;
+    this.display.setPiece(square, newPiece);
+
+    const moveObject = {
+      from: [pieceRow, col],
+      to: [row, col],
+      piece: newPiece,
+      isCapture,
+      isPromotion: true,
+      promotedTo: pieceType,
+    };
+
+    this.updateGameStats(moveObject);
+    this.nextPlayer();
+
+    this.selected = null;
+    this.display.clearHighlights();
+  }
   movePiece(from, to, validate = true) {
     const [fromRow, fromCol] = from;
     const [toRow, toCol] = to;
@@ -216,6 +262,13 @@ class Chess {
       return false;
     }
     if (piece.color !== this.turn()) {
+      return false;
+    }
+
+    // promotion
+    if (piece.type === "pawn" && (toRow === 0 || toRow === 7)) {
+      console.log("Promotion");
+      this.display.showPromotionSelection(to, piece.color);
       return false;
     }
 
@@ -288,9 +341,20 @@ class Chess {
       this.enpassant = null;
     }
 
-    // castling rights
-    this.updateCastlingRights(piece, from);
+    const moveObject = {
+      from: from,
+      to: to,
+      piece: piece,
+      isCapture,
+    };
 
+    this.updateGameStats(moveObject);
+    this.nextPlayer();
+
+    return true;
+  }
+  updateGameStats(move) {
+    const { from, to, piece, isCapture } = move;
     if (piece.type === "pawn" || isCapture) {
       this.halfMoveClock = 0;
     }
@@ -298,7 +362,11 @@ class Chess {
       this.fullmoveNumber++;
     }
 
+    // castling rights
+    this.updateCastlingRights(piece, from);
+
     const opponent = this.oppositeColor(this.turn());
+
     // check king in check
     if (this.inCheck(opponent)) {
       this.colorsInCheck[opponent] = true;
@@ -311,18 +379,18 @@ class Chess {
     if (this.isCheckmate(opponent)) {
       this.display.updateStatus(`${opponent} is in checkmate!`);
     }
-    this.nextPlayer();
 
-    return true;
+    // check for stalemate
+    if (this.isStalemate(opponent)) {
+      this.display.updateStatus("Stalemate!");
+    }
   }
   hasMove(moves, move) {
     return moves.some((m) => m[0] === move[0] && m[1] === move[1]);
   }
   handleClick(square) {
     if (this.selected) {
-      const isLegal = this.legalMoves.some(
-        (move) => move[0] === square[0] && move[1] === square[1]
-      );
+      const isLegal = this.hasMove(this.legalMoves, square);
       if (isLegal) {
         const moved = this.movePiece(this.selected, square);
         if (moved) {
@@ -437,6 +505,13 @@ class Chess {
       this.getLegalMoves(this.getKing(color).position).length === 0
     );
   }
+  isStalemate(color) {
+    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT MOVE
+    return (
+      !this.inCheck(color) &&
+      this.getLegalMoves(this.getKing(color).position).length === 0
+    );
+  }
   copyBoard() {
     return this.board.map((row) => {
       return row.map((piece) => {
@@ -495,10 +570,12 @@ class Chess {
     });
   }
   generatePawnMoves(square, board) {
+    console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
     const [row, col] = square;
     const pawn = board[row][col];
     const moves = [];
     const direction = this.turn() === "w" ? -1 : 1;
+    console.log(board[row + direction], row, direction);
     if (board[row + direction][col] === null) {
       moves.push([row + direction, col]);
       if (
@@ -659,6 +736,9 @@ class Chess {
     }
 
     // castling
+    if (king.moved) {
+      return moves;
+    }
     const rights = this.castlingRights[king.color];
     if (rights.k) {
       // ! NEED TO ADD A CHESSGAME CLASS
