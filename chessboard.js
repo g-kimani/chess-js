@@ -1,25 +1,23 @@
 class ChessBoard {
-  constructor(hidden = false) {
+  constructor() {
     this.display = document.getElementById("chessboard");
-    this.events = {};
+    this.events = new EventHandler();
     this.orientation = "b";
-    this.promotionSquare = null;
+    this.promotionMove = null;
     // this.initialise();
     this.display.addEventListener("click", (e) => {
       const square = e.target.closest(".square");
       const row = parseInt(square.dataset.row);
       const col = parseInt(square.dataset.col);
-      this.emit("click", [row, col]);
+      // this.emit("click", [row, col]);
+      this.events.trigger("click", [row, col]);
     });
     document
       .getElementById("flipBtn")
       .addEventListener("click", this.flip.bind(this));
     document
       .getElementById("startBtn")
-      .addEventListener("click", () => this.emit("start"));
-    if (hidden) {
-      this.display.style.display = "hidden";
-    }
+      .addEventListener("click", () => this.events.trigger("start"));
   }
   initialise() {
     console.count("initialise");
@@ -66,25 +64,13 @@ class ChessBoard {
     pieceBtns.forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.emit("promotion", btn.id, this.promotionSquare);
+        this.events.trigger("promotion", btn.id, this.promotionMove);
         this.hidePromotionSelection();
       });
     });
   }
   start(position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR") {
     this.setPosition(position);
-  }
-  subscribe(event, callback) {
-    if (this.events[event]) {
-      this.events[event].push(callback);
-    } else {
-      this.events[event] = [callback];
-    }
-  }
-  emit(event, ...data) {
-    if (!this.events[event])
-      return console.trace(`No subscribers for ${event} | ${data}`);
-    this.events[event].forEach((callback) => callback(...data));
   }
   clear() {
     this.display.innerHTML = "";
@@ -146,9 +132,12 @@ class ChessBoard {
     return position;
   }
   movePiece(from, to) {
+    console.log("🚀 ~ ChessBoard ~ movePiece ~ to:", to);
+    console.log("🚀 ~ ChessBoard ~ movePiece ~ from:", from);
     const fromSquare = this.display.querySelector(
       `[data-row="${from.row}"][data-col="${from.col}"]`
     );
+    console.log("🚀 ~ ChessBoard ~ movePiece ~ fromSquare:", fromSquare);
     const toSquare = this.display.querySelector(
       `[data-row="${to.row}"][data-col="${to.col}"]`
     );
@@ -173,7 +162,7 @@ class ChessBoard {
   }
   removePiece(square) {
     const squareElement = this.display.querySelector(
-      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+      `[data-row="${square.row}"][data-col="${square.col}"]`
     );
     const piece = squareElement.querySelector(".piece");
     if (piece) {
@@ -182,7 +171,7 @@ class ChessBoard {
   }
   addPiece(square, piece) {
     const squareElement = this.display.querySelector(
-      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+      `[data-row="${square.row}"][data-col="${square.col}"]`
     );
     const image = document.createElement("img");
     image.src = `assets/chess-pieces/${piece.color}${piece.type[0]}.png`;
@@ -191,10 +180,12 @@ class ChessBoard {
     squareElement.appendChild(image);
   }
   setPiece(square, piece) {
+    console.log("🚀 ~ ChessBoard ~ setPiece ~ square, piece:", square, piece);
     const squareElement = this.display.querySelector(
-      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+      `[data-row="${square.row}"][data-col="${square.col}"]`
     );
     const image = squareElement.querySelector(".piece");
+    console.log("🚀 ~ ChessBoard ~ setPiece ~ image:", image);
     if (image) {
       image.src = `assets/chess-pieces/${piece.color}${piece.type[0]}.png`;
       image.alt = piece.type;
@@ -202,11 +193,12 @@ class ChessBoard {
       this.addPiece(square, piece);
     }
   }
-  showPromotionSelection(square, color) {
+  showPromotionSelection(move, color) {
+    const square = move.to;
     const squareElement = this.display.querySelector(
       `[data-row="${square[0]}"][data-col="${square[1]}"]`
     );
-    this.promotionSquare = square;
+    this.promotionMove = move;
     const selector = document.getElementById("promotion");
     selector.classList.toggle("hidden");
     const buttons = selector.querySelectorAll(".promotion-btn");

@@ -10,14 +10,10 @@ class Player {
 }
 
 class Chess {
-  constructor(position = STARTING_POSITION, hidden_display = false) {
+  constructor(position = STARTING_POSITION) {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
     this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.currentPlayer = 0;
-    this.display = new ChessBoard(hidden_display);
-    this.display.subscribe("start", () => this.start(position));
-    this.display.subscribe("click", (square) => this.handleClick(square));
-    this.display.subscribe("promotion", this.handlePromotion.bind(this));
     this.halfMoveClock = 0; // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule.
     this.fullmoveNumber = 1;
     this.selected = null;
@@ -28,10 +24,12 @@ class Chess {
       b: { k: true, q: true },
     }; // castling rights - K = king side, Q = queen side.
     this.colorsInCheck = { w: false, b: false };
-    if (position) {
-      this.load(position);
-    }
+    this.events = new EventHandler();
+    this.eventListeners();
 
+    this.load(position);
+  }
+  eventListeners(position = STARTING_POSITION) {
     document.getElementById("fen").value = position;
     document.getElementById("fenBtn").addEventListener("click", () => {
       const fen = this.fen();
@@ -70,21 +68,30 @@ class Chess {
     };
   }
   start() {
-    const fenInput = document.getElementById("fen");
-    const fen = fenInput.value;
-    this.display.start(fen);
-    this.load(fen);
+    // TODO: start the game
+    // this could be used to start the game from a specific position
+    // this would trigger the timer for a player if it's a timed game
+    // back in manager class this would be more suited to disabling and enabling buttons
   }
-  clear() {
+  reset() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
-    this.display.clear();
+    this.currentPlayer = 0;
+    this.halfMoveClock = 0;
+    this.fullmoveNumber = 1;
+    this.selected = null;
+    this.legalMoves = [];
+    this.enpassant = null;
+    this.castlingRights = {
+      w: { k: true, q: true },
+      b: { k: true, q: true },
+    };
+    this.colorsInCheck = { w: false, b: false };
   }
   turn() {
     return this.players[this.currentPlayer].color;
   }
   nextPlayer() {
     this.currentPlayer = 1 - this.currentPlayer;
-    this.display.updateTurn(this.players[this.currentPlayer].name);
   }
   fen() {
     let pieces = "";
@@ -141,7 +148,8 @@ class Chess {
     return fen;
   }
   load(fen) {
-    this.clear();
+    this.reset();
+    // ! validate fen string
     fen = normaliseFen(fen);
     let [pieces, turn, castlingRights, enpassant] = fen.split(" ");
     this.currentPlayer = turn === "b" ? 1 : 0;
@@ -199,7 +207,6 @@ class Chess {
       const enpassantCol = files.indexOf(enpassantFile);
       this.enpassant = [enpassantRow - 1, enpassantCol];
     }
-    this.display.setPosition(fen);
   }
   getSquare(square) {
     const [row, col] = square;
@@ -208,10 +215,11 @@ class Chess {
   oppositeColor(color) {
     return color === "w" ? "b" : "w";
   }
-  handlePromotion(pieceType, square) {
-    const [row, col] = square;
+  promotePiece(pieceType, move) {
+    const [row, col] = move.to;
+    const [origRow, origCol] = move.from;
     const pieceRow = this.turn() === "w" ? 1 : 6;
-    const piece = this.board[pieceRow][col];
+    const piece = this.board[origRow][origCol];
     if (piece.color !== this.turn()) {
       return false;
     }
@@ -234,29 +242,31 @@ class Chess {
         break;
     }
     this.board[pieceRow][col] = null;
-    this.display.removePiece([pieceRow, col]);
     this.board[row][col] = newPiece;
-    this.display.setPiece(square, newPiece);
 
-    const moveObject = {
-      from: [pieceRow, col],
-      to: [row, col],
+    const moveData = {
+      from: { row: origRow, col: origCol },
+      to: { row, col },
       piece: newPiece,
-      isCapture,
-      isPromotion: true,
-      promotedTo: pieceType,
+      captured: isCapture ? { row, col } : false,
+      promotion: true,
     };
 
-    this.updateGameStats(moveObject);
+    this.updateGameStats(moveData);
     this.nextPlayer();
-
-    this.selected = null;
-    this.display.clearHighlights();
+    this.events.trigger("move", moveData);
   }
   movePiece(from, to, validate = true) {
     const [fromRow, fromCol] = from;
     const [toRow, toCol] = to;
     const piece = this.board[fromRow][fromCol];
+    const moveData = {
+      from: { row: fromRow, col: fromCol },
+      to: { row: toRow, col: toCol },
+      piece: piece,
+      captured: false,
+      castled: false,
+    };
 
     if (piece === null) {
       return false;
@@ -268,11 +278,12 @@ class Chess {
     // promotion
     if (piece.type === "pawn" && (toRow === 0 || toRow === 7)) {
       console.log("Promotion");
-      this.display.showPromotionSelection(to, piece.color);
+      this.events.trigger("requestPromotion", piece.color, {
+        from,
+        to,
+      });
       return false;
     }
-
-    let isCapture = this.board[toRow][toCol] !== null;
 
     let legalMoves;
     if (validate) {
@@ -292,17 +303,18 @@ class Chess {
       const captureRow = piece.color === "w" ? toRow + 1 : toRow - 1;
       console.log("Enpassant capture", captureRow, toCol);
       this.board[captureRow][toCol] = null;
-      this.display.removePiece([captureRow, toCol]);
+      moveData.captured = { row: captureRow, col: toCol };
+    } else {
+      // normal capture
+      if (this.board[toRow][toCol] !== null) {
+        moveData.captured = { row: toRow, col: toCol };
+      }
     }
 
     this.board[toRow][toCol] = piece;
     this.board[fromRow][fromCol] = null;
     piece.position = to;
     piece.moved = true;
-    this.display.movePiece(
-      { row: fromRow, col: fromCol },
-      { row: toRow, col: toCol }
-    );
 
     if (piece.type === "king") {
       // castling
@@ -313,19 +325,19 @@ class Chess {
           this.board[toRow][5].position = [toRow, 5];
           this.board[toRow][5].moved = true;
           this.board[toRow][7] = null;
-          this.display.movePiece(
-            { row: toRow, col: 7 },
-            { row: toRow, col: 5 }
-          );
+          moveData.castled = {
+            from: { row: toRow, col: 7 },
+            to: { row: toRow, col: 5 },
+          };
         } else {
           this.board[toRow][3] = this.board[toRow][0];
           this.board[toRow][3].position = [toRow, 3];
           this.board[toRow][3].moved = true;
           this.board[toRow][0] = null;
-          this.display.movePiece(
-            { row: toRow, col: 0 },
-            { row: toRow, col: 3 }
-          );
+          moveData.castled = {
+            from: { row: toRow, col: 0 },
+            to: { row: toRow, col: 3 },
+          };
         }
       }
     }
@@ -341,17 +353,9 @@ class Chess {
       this.enpassant = null;
     }
 
-    const moveObject = {
-      from: from,
-      to: to,
-      piece: piece,
-      isCapture,
-    };
-
-    this.updateGameStats(moveObject);
+    this.events.trigger("move", moveData);
+    this.updateGameStats(moveData);
     this.nextPlayer();
-
-    return true;
   }
   updateGameStats(move) {
     const { from, to, piece, isCapture } = move;
@@ -370,53 +374,23 @@ class Chess {
     // check king in check
     if (this.inCheck(opponent)) {
       this.colorsInCheck[opponent] = true;
-      this.display.updateStatus(`${opponent} is in check!`);
-    } else {
-      this.display.updateStatus("");
+      this.events.trigger("check", opponent);
     }
 
     // check for checkmate
     if (this.isCheckmate(opponent)) {
-      this.display.updateStatus(`${opponent} is in checkmate!`);
+      this.events.trigger("checkmate", opponent);
     }
 
     // check for stalemate
     if (this.isStalemate(opponent)) {
-      this.display.updateStatus("Stalemate!");
+      this.events.trigger("stalemate", opponent);
     }
   }
   hasMove(moves, move) {
     return moves.some((m) => m[0] === move[0] && m[1] === move[1]);
   }
-  handleClick(square) {
-    if (this.selected) {
-      const isLegal = this.hasMove(this.legalMoves, square);
-      if (isLegal) {
-        const moved = this.movePiece(this.selected, square);
-        if (moved) {
-          this.selected = null;
-          this.display.clearHighlights();
-        }
-      } else {
-        this.selectSquare(square);
-      }
-    } else {
-      this.selectSquare(square);
-    }
-  }
-  selectSquare(square) {
-    console.debug("SELECTING SQUARE", square);
-    this.display.clearHighlights();
-    const piece = this.getSquare(square);
-    console.debug("🚀 ~ Chess ~ selectSquare ~ piece:", piece);
-    if (piece && piece.color === this.turn()) {
-      this.display.highlightSquares([square]);
-      this.selected = square;
-      const legalMoves = this.getLegalMoves(square, this.board);
-      this.legalMoves = legalMoves;
-      this.display.highlightSquares(legalMoves, "move");
-    }
-  }
+
   getCastlingRights(color) {
     let castlingRights = "";
 
@@ -433,7 +407,7 @@ class Chess {
     return castlingRights;
   }
   updateCastlingRights(piece, from) {
-    const [fromRow, fromCol] = from;
+    const { row: fromRow, col: fromCol } = from;
     // queen side rook
     // need to make sure the rook hasn't moved and there are no pieces in between
     //rook = this.board[fromRow][0];
@@ -821,7 +795,7 @@ function isUpperCase(str) {
   return str === str.toUpperCase();
 }
 
-const game = new Chess();
+// const game = new Chess();
 /**
  * ! TESTING
  *
