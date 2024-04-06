@@ -1,3 +1,6 @@
+import Chess from "./chess.js";
+import ChessBoard from "./chessboard.js";
+
 class GameManger {
   constructor() {
     this.game = new Chess("r3k2r/6P1/8/8/5p2/8/8/R3K2R w KQkq - 0 4");
@@ -29,15 +32,15 @@ class GameManger {
     });
     this.game.events.on("check", (color) => {
       console.log("Check", color);
-      this.display.updateStatus(`Check: ${color}`);
+      this.display.displayStatus(`Check: ${color}`);
     });
     this.game.events.on("checkmate", (color) => {
       console.log("Checkmate", color);
-      this.display.updateStatus(`Checkmate: ${color}`);
+      this.display.displayStatus(`Checkmate: ${color}`);
     });
     this.game.events.on("stalemate", () => {
       console.log("Stalemate");
-      this.display.updateStatus("Stalemate");
+      this.display.displayStatus("Stalemate");
     });
   }
   start() {
@@ -96,13 +99,13 @@ class GameManger {
     this.selectedSquare = null;
     this.legalMoves = [];
     this.display.clearHighlights();
-    this.display.updateStatus("");
+    this.display.displayStatus("");
   }
   selectSquare(square) {
-    console.debug("selectSquare", square);
+    // console.debug("selectSquare", square);
     this.display.clearHighlights();
     const piece = this.game.getSquare(square);
-    console.log("🚀 ~ GameManger ~ selectSquare ~ piece:", piece);
+    // console.log("🚀 ~ GameManger ~ selectSquare ~ piece:", piece);
     if (piece && piece.color === this.game.turn()) {
       // highlight the selected square
       this.display.highlightSquares([square], "selected");
@@ -116,3 +119,5 @@ class GameManger {
 }
 
 const game = new GameManger();
+
+export default GameManger;

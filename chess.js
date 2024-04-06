@@ -1,3 +1,8 @@
+import { Pawn, Rook, Knight, Bishop, Queen, King } from "./pieces.js";
+// const { Pawn, Rook, Knight, Bishop, Queen, King } = require("./pieces.js");
+import EventHandler from "./EventHandler.js";
+// const EventHandler = require("./EventHandler.js");
+
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 // const STARTING_POSITION = "8/5kP1/8/8/8/8/K7/8 w - - 0 1";
@@ -241,7 +246,7 @@ class Chess {
         newPiece = new Knight(piece.color, [row, col]);
         break;
     }
-    this.board[pieceRow][col] = null;
+    this.board[origRow][origCol] = null;
     this.board[row][col] = newPiece;
 
     const moveData = {
@@ -271,7 +276,7 @@ class Chess {
     if (piece === null) {
       return false;
     }
-    if (piece.color !== this.turn()) {
+    if (validate && piece.color !== this.turn()) {
       return false;
     }
 
@@ -356,6 +361,7 @@ class Chess {
     this.events.trigger("move", moveData);
     this.updateGameStats(moveData);
     this.nextPlayer();
+    return moveData;
   }
   updateGameStats(move) {
     const { from, to, piece, isCapture } = move;
@@ -544,17 +550,17 @@ class Chess {
     });
   }
   generatePawnMoves(square, board) {
-    console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
+    // console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
     const [row, col] = square;
     const pawn = board[row][col];
     const moves = [];
-    const direction = this.turn() === "w" ? -1 : 1;
-    console.log(board[row + direction], row, direction);
+    const direction = pawn.color === "w" ? -1 : 1;
+    // console.log(board[row + direction], row, direction);
     if (board[row + direction][col] === null) {
       moves.push([row + direction, col]);
       if (
-        ((this.turn() === "w" && row === 6) ||
-          (this.turn() === "b" && row === 1)) &&
+        ((pawn.color === "w" && row === 6) ||
+          (pawn.color === "b" && row === 1)) &&
         board[row + 2 * direction][col] === null
       ) {
         moves.push([row + 2 * direction, col]);
@@ -756,8 +762,7 @@ function normaliseFen(fen) {
   fenArray[0] = pieces;
   return fenArray.join(" ");
 }
-
-function validateFen(fen) {
+function validateFen(fen, onlyPosition = false) {
   fen = normaliseFen(fen);
   const [
     pieces,
@@ -776,6 +781,10 @@ function validateFen(fen) {
       return false;
     }
   }
+  if (onlyPosition) {
+    return true;
+  }
+
   if (!"wb".includes(turn)) {
     return false;
   }
@@ -794,6 +803,8 @@ function validateFen(fen) {
 function isUpperCase(str) {
   return str === str.toUpperCase();
 }
+
+export default Chess;
 
 // const game = new Chess();
 /**

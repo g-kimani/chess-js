@@ -50,3 +50,5 @@ class King extends Piece {
     super("king", color, position);
   }
 }
+
+export { Pawn, Rook, Knight, Bishop, Queen, King };
