@@ -209,6 +209,7 @@ class ChessBoard {
     return position;
   }
   movePiece(from, to, animation = true) {
+    console.log("🚀 ~ ChessBoard ~ movePiece ~ from, to:", from, to);
     // console.log("🚀 ~ ChessBoard ~ movePiece ~ to:", to);
     // console.log("🚀 ~ ChessBoard ~ movePiece ~ from:", from);
     const fromSquare = this.display.querySelector(
@@ -225,19 +226,25 @@ class ChessBoard {
       target.remove();
     }
 
-    piece.style.transition = "all 0.3s ease";
-    piece.style.transform = `translate(${
-      toSquare.offsetLeft - fromSquare.offsetLeft
-    }px, ${toSquare.offsetTop - fromSquare.offsetTop}px)`;
-
     // Wait for the animation to finish before updating the piece's position
     if (animation) {
-      setTimeout(() => {
-        toSquare.appendChild(piece);
+      console.log("animating");
+      window.requestAnimationFrame(() => {
+        piece.style.transition = "all 0.3s ease";
+        piece.style.transform = `translate(${
+          toSquare.offsetLeft - fromSquare.offsetLeft
+        }px, ${toSquare.offsetTop - fromSquare.offsetTop}px)`;
+        console.log(
+          "🚀 ~ ChessBoard ~ window.requestAnimationFrame ~ piece.style.transform:",
+          piece.style.transform
+        );
 
-        piece.style.transform = "none";
-        piece.style.transition = "none";
-      }, 300);
+        setTimeout(() => {
+          toSquare.appendChild(piece);
+          piece.style.transform = "none";
+          piece.style.transition = "none";
+        }, 300);
+      });
     } else {
       toSquare.appendChild(piece);
     }

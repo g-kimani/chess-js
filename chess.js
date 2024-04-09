@@ -34,6 +34,7 @@ class Chess {
 
     this.load(position);
   }
+  // ! Chess class may not need to know about the players or event listeners
   eventListeners(position = STARTING_POSITION) {
     document.getElementById("fen").value = position;
     document.getElementById("fenBtn").addEventListener("click", () => {
@@ -245,6 +246,8 @@ class Chess {
       case "night":
         newPiece = new Knight(piece.color, [row, col]);
         break;
+      default:
+        return false;
     }
     this.board[origRow][origCol] = null;
     this.board[row][col] = newPiece;
@@ -321,31 +324,33 @@ class Chess {
     piece.position = to;
     piece.moved = true;
 
-    if (piece.type === "king") {
-      // castling
-      if (Math.abs(fromCol - toCol) === 2) {
-        // king side
-        if (toCol === 6) {
-          this.board[toRow][5] = this.board[toRow][7];
-          this.board[toRow][5].position = [toRow, 5];
-          this.board[toRow][5].moved = true;
-          this.board[toRow][7] = null;
-          moveData.castled = {
-            from: { row: toRow, col: 7 },
-            to: { row: toRow, col: 5 },
-          };
-        } else {
-          this.board[toRow][3] = this.board[toRow][0];
-          this.board[toRow][3].position = [toRow, 3];
-          this.board[toRow][3].moved = true;
-          this.board[toRow][0] = null;
-          moveData.castled = {
-            from: { row: toRow, col: 0 },
-            to: { row: toRow, col: 3 },
-          };
-        }
-      }
-    }
+    // handle castling
+    moveData.castled = this.handleCastling(moveData);
+    // if (piece.type === "king") {
+    //   // castling
+    //   if (Math.abs(fromCol - toCol) === 2) {
+    //     // king side
+    //     if (toCol === 6) {
+    //       this.board[toRow][5] = this.board[toRow][7];
+    //       this.board[toRow][5].position = [toRow, 5];
+    //       this.board[toRow][5].moved = true;
+    //       this.board[toRow][7] = null;
+    //       moveData.castled = {
+    //         from: { row: toRow, col: 7 },
+    //         to: { row: toRow, col: 5 },
+    //       };
+    //     } else {
+    //       this.board[toRow][3] = this.board[toRow][0];
+    //       this.board[toRow][3].position = [toRow, 3];
+    //       this.board[toRow][3].moved = true;
+    //       this.board[toRow][0] = null;
+    //       moveData.castled = {
+    //         from: { row: toRow, col: 0 },
+    //         to: { row: toRow, col: 3 },
+    //       };
+    //     }
+    //   }
+    // }
 
     // setting en passant square
     if (piece.type === "pawn" && Math.abs(fromRow - toRow) === 2) {
@@ -362,6 +367,35 @@ class Chess {
     this.updateGameStats(moveData);
     this.nextPlayer();
     return moveData;
+  }
+  handleCastling(move) {
+    const { from, to, piece } = move;
+    const { row: fromRow, col: fromCol } = from;
+    const { row: toRow, col: toCol } = to;
+    let castleData = false;
+    if (piece.type === "king" && Math.abs(fromCol - toCol) === 2) {
+      // king side
+      if (toCol === 6) {
+        this.board[toRow][5] = this.board[toRow][7];
+        this.board[toRow][5].position = [toRow, 5];
+        this.board[toRow][5].moved = true;
+        this.board[toRow][7] = null;
+        castleData = {
+          from: { row: toRow, col: 7 },
+          to: { row: toRow, col: 5 },
+        };
+      } else {
+        this.board[toRow][3] = this.board[toRow][0];
+        this.board[toRow][3].position = [toRow, 3];
+        this.board[toRow][3].moved = true;
+        this.board[toRow][0] = null;
+        castleData = {
+          from: { row: toRow, col: 0 },
+          to: { row: toRow, col: 3 },
+        };
+      }
+    }
+    return castleData;
   }
   updateGameStats(move) {
     const { from, to, piece, isCapture } = move;

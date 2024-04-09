@@ -99,7 +99,7 @@ class GameManger {
     this.selectedSquare = null;
     this.legalMoves = [];
     this.display.clearHighlights();
-    this.display.displayStatus("");
+    this.display.setStatus("");
   }
   selectSquare(square) {
     // console.debug("selectSquare", square);
