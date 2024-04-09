@@ -106,20 +106,34 @@ class ChessBoard {
     this.setupEventListeners();
   }
   setupEventListeners() {
-    // console.count("setupEventListeners");
+    console.count("setupEventListeners");
     this.display.addEventListener("click", this.triggerClick.bind(this));
-
+    this.setupPromotionButtons();
+  }
+  setupPromotionButtons() {
     const selector = document.getElementById("promotion");
-    const closeBtn = selector.querySelector(".close");
-    closeBtn.addEventListener("click", this.hidePromotionSelection);
-    const pieceBtns = selector.querySelectorAll(".promotion-btn");
-    pieceBtns.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+    selector.innerHTML = "";
+    const pieces = ["queen", "rook", "bishop", "night"];
+    pieces.forEach((piece) => {
+      const button = document.createElement("button");
+      button.classList.add("promotion-btn");
+      button.id = piece;
+      button.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.events.trigger("promotion", btn.id, this.promotionMove);
+        this.events.trigger("promotion", button.id, this.promotionMove);
         this.hidePromotionSelection();
       });
+      const image = document.createElement("img");
+      image.src = `assets/chess-pieces/w${piece[0]}.png`;
+      image.alt = piece;
+      button.appendChild(image);
+      selector.appendChild(button);
     });
+    const closeBtn = document.createElement("button");
+    closeBtn.classList.add("close");
+    closeBtn.textContent = "X";
+    closeBtn.addEventListener("click", this.hidePromotionSelection);
+    selector.appendChild(closeBtn);
   }
   triggerClick(event) {
     const square = event.target.closest(".square");
@@ -221,23 +235,19 @@ class ChessBoard {
     );
     const piece = fromSquare.querySelector(".piece");
     const target = toSquare.querySelector(".piece");
-    this.removePiece(from);
+    // this.removePiece(from);
     if (target) {
       target.remove();
     }
 
     // Wait for the animation to finish before updating the piece's position
     if (animation) {
-      console.log("animating");
       window.requestAnimationFrame(() => {
+        piece.style.position = "absolute";
         piece.style.transition = "all 0.3s ease";
         piece.style.transform = `translate(${
           toSquare.offsetLeft - fromSquare.offsetLeft
         }px, ${toSquare.offsetTop - fromSquare.offsetTop}px)`;
-        console.log(
-          "🚀 ~ ChessBoard ~ window.requestAnimationFrame ~ piece.style.transform:",
-          piece.style.transform
-        );
 
         setTimeout(() => {
           toSquare.appendChild(piece);

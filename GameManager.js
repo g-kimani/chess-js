@@ -32,15 +32,15 @@ class GameManger {
     });
     this.game.events.on("check", (color) => {
       console.log("Check", color);
-      this.display.displayStatus(`Check: ${color}`);
+      this.display.setStatus(`Check: ${color}`);
     });
     this.game.events.on("checkmate", (color) => {
       console.log("Checkmate", color);
-      this.display.displayStatus(`Checkmate: ${color}`);
+      this.display.setStatus(`Checkmate: ${color}`);
     });
     this.game.events.on("stalemate", () => {
       console.log("Stalemate");
-      this.display.displayStatus("Stalemate");
+      this.display.setStatus("Stalemate");
     });
   }
   start() {

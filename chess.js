@@ -222,8 +222,11 @@ class Chess {
     return color === "w" ? "b" : "w";
   }
   promotePiece(pieceType, move) {
+    console.count("Promote");
+    console.log("🚀 ~ Chess ~ promotePiece ~ move:", move);
     const [row, col] = move.to;
     const [origRow, origCol] = move.from;
+    console.log("🚀 ~ Chess ~ promotePiece ~ this.board:", this.fen());
     const pieceRow = this.turn() === "w" ? 1 : 6;
     const piece = this.board[origRow][origCol];
     if (piece.color !== this.turn()) {
@@ -363,9 +366,9 @@ class Chess {
       this.enpassant = null;
     }
 
-    this.events.trigger("move", moveData);
     this.updateGameStats(moveData);
     this.nextPlayer();
+    this.events.trigger("move", moveData);
     return moveData;
   }
   handleCastling(move) {
