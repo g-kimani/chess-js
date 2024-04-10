@@ -1,6 +1,7 @@
 import { Pawn, Rook, Knight, Bishop, Queen, King } from "./pieces.js";
 // const { Pawn, Rook, Knight, Bishop, Queen, King } = require("./pieces.js");
 import EventHandler from "./EventHandler.js";
+import { normaliseFen, isValidFen } from "./helpers.js";
 // const EventHandler = require("./EventHandler.js");
 
 const STARTING_POSITION =
@@ -15,15 +16,15 @@ class Player {
 }
 
 class Chess {
-  constructor(position = STARTING_POSITION) {
+  constructor() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
     this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.currentPlayer = 0;
     this.halfMoveClock = 0; // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule.
-    this.fullmoveNumber = 1;
+    this.fullMoveNumber = 1;
     this.selected = null;
     this.legalMoves = [];
-    this.enpassant = null;
+    this.enPassant = null;
     this.castlingRights = {
       w: { k: true, q: true },
       b: { k: true, q: true },
@@ -32,7 +33,7 @@ class Chess {
     this.events = new EventHandler();
     this.eventListeners();
 
-    this.load(position);
+    // this.load(position);
   }
   // ! Chess class may not need to know about the players or event listeners
   eventListeners(position = STARTING_POSITION) {
@@ -60,33 +61,34 @@ class Chess {
       board: this.board,
       currentPlayer: this.currentPlayer,
       halfMoveClock: this.halfMoveClock,
-      fullmoveNumber: this.fullmoveNumber,
+      fullmoveNumber: this.fullMoveNumber,
       castlingRights: this.castlingRights,
       colorsInCheck: this.colorsInCheck,
-      enpassant: this.enpassant,
+      enpassant: this.enPassant,
       legalMoves: this.legalMoves,
       selected: this.selected,
       inCheck: {
         w: this.inCheck("w"),
         b: this.inCheck("b"),
       },
-      enpassant: this.enpassant,
+      enpassant: this.enPassant,
     };
   }
-  start() {
+  start(position = STARTING_POSITION) {
     // TODO: start the game
     // this could be used to start the game from a specific position
     // this would trigger the timer for a player if it's a timed game
     // back in manager class this would be more suited to disabling and enabling buttons
+    this.load(position);
   }
   reset() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
     this.currentPlayer = 0;
     this.halfMoveClock = 0;
-    this.fullmoveNumber = 1;
+    this.fullMoveNumber = 1;
     this.selected = null;
     this.legalMoves = [];
-    this.enpassant = null;
+    this.enPassant = null;
     this.castlingRights = {
       w: { k: true, q: true },
       b: { k: true, q: true },
@@ -123,16 +125,15 @@ class Chess {
       }
     }
 
-    let castlingRights =
-      this.getCastlingRights("w") + this.getCastlingRights("b");
+    let castlingRights = this.getAllCastlingRights();
     if (castlingRights === "") {
       castlingRights = "-";
     }
 
     let enpassantSquare;
     // en passant square
-    if (this.enpassant) {
-      const [enpassantRow, enpassantCol] = this.enpassant;
+    if (this.enPassant) {
+      const [enpassantRow, enpassantCol] = this.enPassant;
       const files = "abcdefgh";
       const enpassantFile = files[enpassantCol];
       enpassantSquare = `${enpassantFile}${8 - enpassantRow}`;
@@ -150,14 +151,25 @@ class Chess {
       " " +
       String(this.halfMoveClock) + // halfmove clock
       " " +
-      String(this.fullmoveNumber); // fullmove number
+      String(this.fullMoveNumber); // fullmove number
     return fen;
   }
   load(fen) {
     this.reset();
     // ! validate fen string
+    if (!isValidFen(fen)) {
+      // alert("Invalid FEN string");
+      throw new Error(`Invalid FEN: ${fen}`);
+    }
     fen = normaliseFen(fen);
-    let [pieces, turn, castlingRights, enpassant] = fen.split(" ");
+    let [
+      pieces,
+      turn,
+      castlingRights,
+      enpassant,
+      halfMoveClock,
+      fullMoveNumber,
+    ] = fen.split(" ");
     this.currentPlayer = turn === "b" ? 1 : 0;
     let rows = pieces.split("/");
 
@@ -211,8 +223,11 @@ class Chess {
       const enpassantFile = enpassant[0];
       const enpassantRow = parseInt(enpassant[1]);
       const enpassantCol = files.indexOf(enpassantFile);
-      this.enpassant = [enpassantRow - 1, enpassantCol];
+      this.enPassant = [enpassantRow - 1, enpassantCol];
     }
+
+    this.halfMoveClock = parseInt(halfMoveClock);
+    this.fullMoveNumber = parseInt(fullMoveNumber);
   }
   getSquare(square) {
     const [row, col] = square;
@@ -334,10 +349,10 @@ class Chess {
       // en passant
       // if the pawn moves two squares, it can be captured by an enemy pawn
       const direction = piece.color === "w" ? -1 : 1;
-      this.enpassant = [toRow + direction * -1, toCol];
+      this.enPassant = [toRow + direction * -1, toCol];
     } else {
       // reset en passant square
-      this.enpassant = null;
+      this.enPassant = null;
     }
 
     this.updateGameStats(moveData);
@@ -383,7 +398,7 @@ class Chess {
     }
 
     if (piece.color === "b") {
-      this.fullmoveNumber++;
+      this.fullMoveNumber++;
     }
 
     // castling rights
@@ -427,6 +442,9 @@ class Chess {
       castlingRights = castlingRights.toUpperCase();
     }
     return castlingRights;
+  }
+  getAllCastlingRights() {
+    return this.getCastlingRights("w") + this.getCastlingRights("b");
   }
   updateCastlingRights(piece, from) {
     const { row: fromRow, col: fromCol } = from;
@@ -593,13 +611,13 @@ class Chess {
     }
 
     // en passant
-    if (this.enpassant) {
-      const [enpassantRow, enpassantCol] = this.enpassant;
+    if (this.enPassant) {
+      const [enpassantRow, enpassantCol] = this.enPassant;
       if (
         Math.abs(col - enpassantCol) === 1 &&
         row + direction === enpassantRow
       ) {
-        moves.push(this.enpassant);
+        moves.push(this.enPassant);
       }
     }
 
@@ -766,57 +784,20 @@ class Chess {
   }
 }
 
-function normaliseFen(fen) {
-  const fenArray = fen.split(" ");
-  let pieces = fenArray[0];
-  pieces = pieces
-    .replace(/8/g, "11111111")
-    .replace(/7/g, "1111111")
-    .replace(/6/g, "111111")
-    .replace(/5/g, "11111")
-    .replace(/4/g, "1111")
-    .replace(/3/g, "111")
-    .replace(/2/g, "11");
-  fenArray[0] = pieces;
-  return fenArray.join(" ");
-}
-function validateFen(fen, onlyPosition = false) {
-  fen = normaliseFen(fen);
-  const [
-    pieces,
-    turn,
-    castlingRights,
-    enpassant,
-    halfMoveClock,
-    fullmoveNumber,
-  ] = fen.split(" ");
-  const rows = pieces.split("/");
-  if (rows.length !== 8) {
-    return false;
-  }
-  for (let row of rows) {
-    if (row.length !== 8 || !/^([1prnbqkPRNBQK]+)$/.test(row)) {
-      return false;
-    }
-  }
-  if (onlyPosition) {
-    return true;
-  }
-
-  if (!"wb".includes(turn)) {
-    return false;
-  }
-  if (!/^(-|[KQkq]+)$/.test(castlingRights)) {
-    return false;
-  }
-  if (!/^(-|[a-h][36])$/.test(enpassant)) {
-    return false;
-  }
-  if (isNaN(halfMoveClock) || isNaN(fullmoveNumber)) {
-    return false;
-  }
-  return true;
-}
+// function normaliseFen(fen) {
+//   const fenArray = fen.split(" ");
+//   let pieces = fenArray[0];
+//   pieces = pieces
+//     .replace(/8/g, "11111111")
+//     .replace(/7/g, "1111111")
+//     .replace(/6/g, "111111")
+//     .replace(/5/g, "11111")
+//     .replace(/4/g, "1111")
+//     .replace(/3/g, "111")
+//     .replace(/2/g, "11");
+//   fenArray[0] = pieces;
+//   return fenArray.join(" ");
+// }
 
 function isUpperCase(str) {
   return str === str.toUpperCase();

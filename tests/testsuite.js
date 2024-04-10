@@ -2,12 +2,17 @@ class TestSuite {
   constructor() {
     this.tests = [];
   }
-  testGroup(name, tests) {
+  testGroup(name, tests, disabled = false) {
     console.group(name);
+    if (disabled) {
+      console.log("Tests disabled");
+      console.groupEnd();
+      return;
+    }
     const passed = this.runTests(tests);
     console.groupEnd();
     console.log(
-      `${passed === tests.length ? "✅" : "❌"} ${name}  |  ${passed}/${
+      `${passed === tests.length ? "👌" : "❌"} ${name}  |  ${passed}/${
         tests.length
       } passed`
     );

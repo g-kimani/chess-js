@@ -106,7 +106,7 @@ class ChessBoard {
     this.setupEventListeners();
   }
   setupEventListeners() {
-    console.count("setupEventListeners");
+    // console.count("setupEventListeners");
     this.display.addEventListener("click", this.triggerClick.bind(this));
     this.setupPromotionButtons();
   }
@@ -223,7 +223,7 @@ class ChessBoard {
     return position;
   }
   movePiece(from, to, animation = true) {
-    console.log("🚀 ~ ChessBoard ~ movePiece ~ from, to:", from, to);
+    // console.log("🚀 ~ ChessBoard ~ movePiece ~ from, to:", from, to);
     // console.log("🚀 ~ ChessBoard ~ movePiece ~ to:", to);
     // console.log("🚀 ~ ChessBoard ~ movePiece ~ from:", from);
     const fromSquare = this.display.querySelector(

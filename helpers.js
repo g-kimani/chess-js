@@ -14,8 +14,46 @@ function normaliseFen(fen) {
   return fenArray.join(" ");
 }
 
+function isValidFen(fen, onlyPosition = false) {
+  fen = normaliseFen(fen);
+  const [
+    pieces,
+    turn,
+    castlingRights,
+    enpassant,
+    halfMoveClock,
+    fullmoveNumber,
+  ] = fen.split(" ");
+  const rows = pieces.split("/");
+  if (rows.length !== 8) {
+    return false;
+  }
+  for (let row of rows) {
+    if (row.length !== 8 || !/^([1prnbqkPRNBQK]+)$/.test(row)) {
+      return false;
+    }
+  }
+  if (onlyPosition) {
+    return true;
+  }
+
+  if (!"wb".includes(turn)) {
+    return false;
+  }
+  if (!/^(-|[KQkq]+)$/.test(castlingRights)) {
+    return false;
+  }
+  if (!/^(-|[a-h][36])$/.test(enpassant)) {
+    return false;
+  }
+  if (isNaN(halfMoveClock) || isNaN(fullmoveNumber)) {
+    return false;
+  }
+  return true;
+}
+
 function indexToRowCol(index) {
   return { row: Math.floor(index / 8), col: index % 8 };
 }
 
-export { normaliseFen, indexToRowCol };
+export { normaliseFen, isValidFen, indexToRowCol };
