@@ -1,7 +1,7 @@
 import { Pawn, Rook, Knight, Bishop, Queen, King } from "./pieces.js";
 // const { Pawn, Rook, Knight, Bishop, Queen, King } = require("./pieces.js");
 import EventHandler from "./EventHandler.js";
-import { normaliseFen, isValidFen } from "./helpers.js";
+import { normaliseFen, isValidFen, inBounds } from "./helpers.js";
 // const EventHandler = require("./EventHandler.js");
 
 const STARTING_POSITION =
@@ -159,7 +159,12 @@ class Chess {
     // ! validate fen string
     if (!isValidFen(fen)) {
       // alert("Invalid FEN string");
-      throw new Error(`Invalid FEN: ${fen}`);
+      // if piece positions are valid, load the board with default values
+      if (isValidFen(fen, true)) {
+        fen += " w - - 0 1";
+      } else {
+        throw new Error(`Invalid FEN: ${fen}`);
+      }
     }
     fen = normaliseFen(fen);
     let [
@@ -205,7 +210,7 @@ class Chess {
       }
     }
 
-    if (castlingRights && castlingRights !== "-") {
+    if (castlingRights) {
       // reset castling rights
       this.castlingRights = {
         w: { k: false, q: false },
@@ -231,6 +236,9 @@ class Chess {
   }
   getSquare(square) {
     const [row, col] = square;
+    if (!inBounds(row, col)) {
+      return null;
+    }
     return this.board[row][col];
   }
   oppositeColor(color) {

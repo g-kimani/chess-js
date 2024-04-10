@@ -56,4 +56,8 @@ function indexToRowCol(index) {
   return { row: Math.floor(index / 8), col: index % 8 };
 }
 
-export { normaliseFen, isValidFen, indexToRowCol };
+function inBounds(row, col) {
+  return row >= 0 && row < 8 && col >= 0 && col < 8;
+}
+
+export { normaliseFen, isValidFen, indexToRowCol, inBounds };

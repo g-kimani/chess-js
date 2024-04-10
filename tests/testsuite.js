@@ -10,12 +10,12 @@ class TestSuite {
       return;
     }
     const passed = this.runTests(tests);
-    console.groupEnd();
     console.log(
       `${passed === tests.length ? "👌" : "❌"} ${name}  |  ${passed}/${
         tests.length
       } passed`
     );
+    console.groupEnd();
   }
   makeTest(name, expected, fn) {
     const test = {
@@ -36,7 +36,7 @@ class TestSuite {
     tests.forEach((test) => {
       if (typeof test === "function") {
         test();
-        return;
+        return passedNum++;
       }
       try {
         const start = performance.now();
