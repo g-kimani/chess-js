@@ -227,7 +227,6 @@ class Chess {
     const [row, col] = move.to;
     const [origRow, origCol] = move.from;
     console.log("🚀 ~ Chess ~ promotePiece ~ this.board:", this.fen());
-    const pieceRow = this.turn() === "w" ? 1 : 6;
     const piece = this.board[origRow][origCol];
     if (piece.color !== this.turn()) {
       return false;
@@ -329,31 +328,6 @@ class Chess {
 
     // handle castling
     moveData.castled = this.handleCastling(moveData);
-    // if (piece.type === "king") {
-    //   // castling
-    //   if (Math.abs(fromCol - toCol) === 2) {
-    //     // king side
-    //     if (toCol === 6) {
-    //       this.board[toRow][5] = this.board[toRow][7];
-    //       this.board[toRow][5].position = [toRow, 5];
-    //       this.board[toRow][5].moved = true;
-    //       this.board[toRow][7] = null;
-    //       moveData.castled = {
-    //         from: { row: toRow, col: 7 },
-    //         to: { row: toRow, col: 5 },
-    //       };
-    //     } else {
-    //       this.board[toRow][3] = this.board[toRow][0];
-    //       this.board[toRow][3].position = [toRow, 3];
-    //       this.board[toRow][3].moved = true;
-    //       this.board[toRow][0] = null;
-    //       moveData.castled = {
-    //         from: { row: toRow, col: 0 },
-    //         to: { row: toRow, col: 3 },
-    //       };
-    //     }
-    //   }
-    // }
 
     // setting en passant square
     if (piece.type === "pawn" && Math.abs(fromRow - toRow) === 2) {
@@ -404,7 +378,10 @@ class Chess {
     const { from, to, piece, isCapture } = move;
     if (piece.type === "pawn" || isCapture) {
       this.halfMoveClock = 0;
+    } else {
+      this.halfMoveClock++;
     }
+
     if (piece.color === "b") {
       this.fullmoveNumber++;
     }
@@ -420,7 +397,9 @@ class Chess {
       this.events.trigger("check", opponent);
     }
 
+    // ? may only need to check for checkmate and stalemate if the king is in check
     // check for checkmate
+    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT PROTECT THE KING
     if (this.isCheckmate(opponent)) {
       this.events.trigger("checkmate", opponent);
     }
@@ -538,6 +517,7 @@ class Chess {
   }
 
   /* PIECE MOVEMENT */
+  // ! Could be moved to a separate class
   getLegalMoves(square, board = this.board, pseudo = false) {
     const [row, col] = square;
     const piece = board[row][col];
@@ -774,6 +754,7 @@ class Chess {
         board[row][1] === null &&
         board[row][2] === null &&
         board[row][3] === null &&
+        !this.isSquareAttacked(this.oppositeColor(king.color), [row, 1]) &&
         !this.isSquareAttacked(this.oppositeColor(king.color), [row, 2]) &&
         !this.isSquareAttacked(this.oppositeColor(king.color), [row, 3])
       ) {

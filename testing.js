@@ -36,7 +36,9 @@ class TestSuite {
     console.log("Running tests...");
     let passedNum = 0;
     tests.forEach((test) => {
-      if (typeof test !== "object") {
+      if (typeof test === "function") {
+        test();
+        return;
       }
       try {
         const start = performance.now();
@@ -272,6 +274,13 @@ tests.testGroup("Chess Class", [
     chess.start();
     return chess.board.flat().filter((p) => p !== null).length === 32;
   }),
+
+  () =>
+    tests.testGroup("Chess - Moves", [
+      tests.makeTest("Chess moves a piece with no validation", true, () => {
+        console.log("grouping test");
+      }),
+    ]),
 
   // Test- check if chess can move a piece
   tests.makeTest("Chess moves a piece with no validation", true, () => {
