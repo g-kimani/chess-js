@@ -1,6 +1,7 @@
 import tests from "./testsuite.js";
 import Chess from "../chess.js";
 import { indexToRowCol, normaliseFen } from "../helpers.js";
+import ChessBoard from "../chessboard.js";
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 /** TESTS  CHESS */
@@ -422,5 +423,303 @@ tests.testGroup("Chess Class", [
           }
         }
       ),
+    ]),
+  () =>
+    tests.testGroup("Chess - movePiece", [
+      tests.makeTest("moves a piece with no validation", true, () => {
+        const chess = new Chess();
+        chess.start();
+        const from = [0, 0];
+        const to = [4, 4];
+        const move = chess.movePiece(from, to, false);
+        return (
+          chess.board[from[0]][from[1]] === null &&
+          chess.board[to[0]][to[1]].fen() === "r"
+        );
+      }),
+      tests.makeTest("moves a piece with validation", true, () => {
+        const chess = new Chess();
+        chess.start();
+        const from = [6, 0];
+        const to = [5, 0];
+        const move = chess.movePiece(from, to, true);
+        return (
+          chess.board[from[0]][from[1]] === null &&
+          chess.board[to[0]][to[1]].fen() === "P"
+        );
+      }),
+      tests.makeTest("rejects an invalid move", false, () => {
+        const chess = new Chess();
+        chess.start();
+        const from = [0, 0];
+        const to = [4, 4];
+        return chess.movePiece(from, to, true);
+      }),
+      tests.makeTest(
+        "raises an error for an invalid from square",
+        "Invalid from square",
+        () => {
+          const chess = new Chess();
+          chess.start();
+          const from = [8, 8];
+          const to = [4, 4];
+          try {
+            chess.movePiece(from, to, true);
+          } catch (e) {
+            return e.message;
+          }
+        }
+      ),
+      tests.makeTest(
+        "raises an error for an invalid to square",
+        "Invalid to square",
+        () => {
+          const chess = new Chess();
+          chess.start();
+          const from = [0, 0];
+          const to = [8, 8];
+          try {
+            chess.movePiece(from, to, true);
+          } catch (e) {
+            return e.message;
+          }
+        }
+      ),
+      tests.makeTest("rejects a move for an empty square", false, () => {
+        const chess = new Chess();
+        chess.start();
+        const from = [4, 4];
+        const to = [5, 5];
+        return chess.movePiece(from, to, true);
+      }),
+      tests.makeTest("rejects a move for the wrong player", false, () => {
+        const chess = new Chess();
+        chess.start();
+        const from = [1, 0];
+        const to = [2, 0];
+        return chess.movePiece(from, to, true);
+      }),
+      tests.makeTest("handles capturing a piece", true, () => {
+        const chess = new Chess();
+        const board = new ChessBoard();
+        // board.reset();
+        board.start(STARTING_POSITION);
+        chess.start();
+        const move = chess.movePiece([6, 0], [4, 0]);
+        const move2 = chess.movePiece([1, 1], [3, 1]);
+        const move3 = chess.movePiece([4, 0], [3, 1]);
+        return chess.getSquare([3, 1]).fen() === "P";
+      }),
+      tests.makeTest("sets an enpassant square after pawn move", true, () => {
+        const chess = new Chess();
+        chess.start();
+        const move = chess.movePiece([6, 0], [4, 0]);
+        return chess.enPassant[0] === 5 && chess.enPassant[1] === 0;
+      }),
+      tests.makeTest("handles enpassant capture", true, () => {
+        const chess = new Chess();
+        chess.start();
+        chess.movePiece([6, 0], [4, 0]);
+        chess.movePiece([1, 0], [2, 0]);
+        chess.movePiece([4, 0], [3, 0]);
+        const hey = chess.movePiece([1, 1], [3, 1]);
+        const move = chess.movePiece([3, 0], [2, 1]);
+        return (
+          chess.getSquare([3, 1]) === null &&
+          chess.getSquare([2, 1]).fen() === "P"
+        );
+      }),
+      () =>
+        tests.testGroup("movePiece - Castling", [
+          tests.makeTest("handles white king side castling", true, () => {
+            const chess = new Chess();
+            chess.start("8/7k/8/8/8/8/8/R3K2R w KQkq - 0 1");
+            const move = chess.movePiece([7, 4], [7, 6]);
+            return (
+              chess.getSquare([7, 6]).fen() === "K" &&
+              chess.getSquare([7, 5]).fen() === "R"
+            );
+          }),
+          tests.makeTest("handles white queen side castling", true, () => {
+            const chess = new Chess();
+            chess.start("8/7k/8/8/8/8/8/R3K2R w KQkq - 0 1");
+            const move = chess.movePiece([7, 4], [7, 2]);
+            return (
+              chess.getSquare([7, 2]).fen() === "K" &&
+              chess.getSquare([7, 3]).fen() === "R"
+            );
+          }),
+          tests.makeTest("handles black king side castling", true, () => {
+            const chess = new Chess();
+            chess.start("r3k2r/8/8/8/8/8/8/K7 b KQkq - 0 1");
+            const move = chess.movePiece([0, 4], [0, 6]);
+            return (
+              chess.getSquare([0, 6]).fen() === "k" &&
+              chess.getSquare([0, 5]).fen() === "r"
+            );
+          }),
+          tests.makeTest("handles black queen side castling", true, () => {
+            const chess = new Chess();
+            chess.start("r3k2r/8/8/8/8/8/8/K7 b KQkq - 0 1");
+            const move = chess.movePiece([0, 4], [0, 2]);
+            return (
+              chess.getSquare([0, 2]).fen() === "k" &&
+              chess.getSquare([0, 3]).fen() === "r"
+            );
+          }),
+          tests.makeTest(
+            "updates castling rights after a white king move",
+            true,
+            () => {
+              const chess = new Chess();
+              chess.start("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+              chess.movePiece([7, 4], [6, 4]);
+              return chess.getAllCastlingRights() === "kq";
+            }
+          ),
+          tests.makeTest(
+            "updates castling rights after a black king move",
+            true,
+            () => {
+              const chess = new Chess();
+              chess.start("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+              chess.movePiece([0, 4], [1, 4]);
+              return chess.getAllCastlingRights() === "KQ";
+            }
+          ),
+        ]),
+      tests.makeTest("updates game values after a move", true, () => {
+        const chess = new Chess();
+        chess.start();
+        const move = chess.movePiece([6, 0], [4, 0]);
+        return (
+          chess.currentPlayer === 1 &&
+          chess.halfMoveClock === 0 &&
+          chess.fullMoveNumber === 1 &&
+          chess.enPassant[0] === 5 &&
+          chess.enPassant[1] === 0 &&
+          chess.getAllCastlingRights() === "KQkq"
+        );
+      }),
+      tests.makeTest(
+        "increments halfMoveClock after a non-pawn move",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start();
+          const move = chess.movePiece([7, 1], [5, 2]);
+          return chess.halfMoveClock === 1;
+        }
+      ),
+      tests.makeTest("resets halfMoveClock after a pawn move", 0, () => {
+        const chess = new Chess();
+        chess.start();
+        chess.movePiece([7, 1], [5, 2]);
+        if (chess.halfMoveClock !== 1) {
+          throw new Error(
+            `Expected halfMoveClock to be 1 got ${chess.halfMoveClock}`
+          );
+        }
+        chess.movePiece([1, 1], [2, 1]);
+        return chess.halfMoveClock;
+      }),
+      tests.makeTest("increments fullMoveNumber after black move", 3, () => {
+        const chess = new Chess();
+        chess.start();
+        chess.movePiece([7, 1], [5, 2]);
+        chess.movePiece([1, 1], [2, 1]); // 1st blak move
+        chess.movePiece([5, 2], [4, 0]);
+        chess.movePiece([2, 1], [3, 1]); // 2nd black move
+        return chess.fullMoveNumber;
+      }),
+      tests.makeTest("changes turn after a move", "b", () => {
+        const chess = new Chess();
+        chess.start();
+        chess.movePiece([6, 0], [4, 0]);
+        return chess.turn();
+      }),
+      tests.makeTest(
+        "triggers requests promotion when pawn moves to back rank",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("k7/4P3/8/8/8/8/8/1K6 w - - 0 1");
+          let promotion = false;
+          // ! MAY be beneficial to remove the need for the event. Could have the display trigger the promotion display and then do the move based on that input
+          // register event
+          chess.events.on("requestPromotion", (data) => {
+            promotion = true;
+          });
+          chess.movePiece([1, 4], [0, 4]);
+
+          return promotion;
+          // return chess.getSquare([0, 0]).fen() === "Q";
+        }
+      ),
+      tests.makeTest("triggers a moved event after a move", true, () => {
+        const chess = new Chess();
+        chess.start();
+        let moved = false;
+        chess.events.on("moved", (data) => {
+          moved = true;
+        });
+        chess.movePiece([6, 0], [4, 0]);
+        return moved;
+      }),
+      tests.makeTest(
+        "triggers a check event after a player moves in to check",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1");
+          let check = false;
+          chess.events.on("check", (data) => {
+            check = true;
+          });
+          chess.movePiece([7, 0], [0, 0]);
+          return check;
+        }
+      ),
+      tests.makeTest(
+        "triggers a checkmate event after a checkmate",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("r3k3/7R/2r5/8/8/8/8/R3K3 w - - 2 2");
+          let checkmate = false;
+          chess.events.on("checkmate", (data) => {
+            checkmate = true;
+          });
+          chess.movePiece([7, 0], [0, 0]);
+          chess.movePiece([2, 2], [0, 2]);
+          chess.movePiece([0, 0], [0, 2]);
+          return checkmate;
+        }
+      ),
+      tests.makeTest(
+        "triggers a stalemate event after a stalemate",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("7k/5Q2/8/7K/8/8/8/8 w - - 0 1");
+          let stalemate = false;
+          chess.events.on("stalemate", (data) => {
+            stalemate = true;
+          });
+          chess.movePiece([3, 7], [2, 7]);
+          return stalemate;
+        }
+      ),
+      tests.makeTest("returns move data after a move", true, () => {
+        const chess = new Chess();
+        chess.start();
+        const move = chess.movePiece([6, 0], [4, 0]);
+        return (
+          move.from.row === 6 &&
+          move.from.col === 0 &&
+          move.to.row === 4 &&
+          move.to.col === 0
+        );
+      }),
     ]),
 ]);

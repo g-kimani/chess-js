@@ -292,6 +292,8 @@ class Chess {
   movePiece(from, to, validate = true) {
     const [fromRow, fromCol] = from;
     const [toRow, toCol] = to;
+    if (!inBounds(fromRow, fromCol)) throw new Error("Invalid from square");
+    if (!inBounds(toRow, toCol)) throw new Error("Invalid to square");
     const piece = this.board[fromRow][fromCol];
     const moveData = {
       from: { row: fromRow, col: fromCol },
@@ -302,19 +304,11 @@ class Chess {
     };
 
     if (piece === null) {
+      console.log("No piece to move");
       return false;
     }
     if (validate && piece.color !== this.turn()) {
-      return false;
-    }
-
-    // promotion
-    if (piece.type === "pawn" && (toRow === 0 || toRow === 7)) {
-      console.log("Promotion");
-      this.events.trigger("requestPromotion", piece.color, {
-        from,
-        to,
-      });
+      console.log("Not your turn");
       return false;
     }
 
@@ -325,6 +319,15 @@ class Chess {
 
     if (validate && !this.hasMove(legalMoves, to)) {
       console.log("Illegal move");
+      return false;
+    }
+    // promotion
+    if (piece.type === "pawn" && (toRow === 0 || toRow === 7)) {
+      console.log("Promotion");
+      this.events.trigger("requestPromotion", piece.color, {
+        from,
+        to,
+      });
       return false;
     }
     // en passant capture
@@ -365,7 +368,7 @@ class Chess {
 
     this.updateGameStats(moveData);
     this.nextPlayer();
-    this.events.trigger("move", moveData);
+    this.events.trigger("moved", moveData);
     return moveData;
   }
   handleCastling(move) {
@@ -431,6 +434,11 @@ class Chess {
     if (this.isStalemate(opponent)) {
       this.events.trigger("stalemate", opponent);
     }
+
+    // ! Check for draw conditions
+    // 1. Fifty-move rule
+    // 2. Threefold repetition
+    // 3. Insufficient material
   }
   hasMove(moves, move) {
     return moves.some((m) => m[0] === move[0] && m[1] === move[1]);
@@ -521,18 +529,45 @@ class Chess {
     );
   }
   isCheckmate(color) {
-    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT PROTECT THE KING
-    return (
-      this.inCheck(color) &&
-      this.getLegalMoves(this.getKing(color).position).length === 0
-    );
+    // check if the king is in check
+    if (!this.inCheck(color)) {
+      return false;
+    }
+    // check if the king can move out of check
+    if (this.getLegalMoves(this.getKing(color).position).length > 0) {
+      return false;
+    }
+    // check no pieces can block the check
+    const pieces = this.board
+      .flat()
+      .filter((piece) => piece && piece.color === color);
+
+    for (let piece of pieces) {
+      const moves = this.getLegalMoves(piece.position);
+      if (moves.length > 0) {
+        return false;
+      }
+    }
+    return true;
   }
   isStalemate(color) {
     // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT MOVE
-    return (
-      !this.inCheck(color) &&
-      this.getLegalMoves(this.getKing(color).position).length === 0
-    );
+    if (this.inCheck(color)) {
+      return false;
+    }
+    if (this.getLegalMoves(this.getKing(color).position).length > 0) {
+      return false;
+    }
+    const pieces = this.board
+      .flat()
+      .filter((piece) => piece && piece.color === color);
+    for (let piece of pieces) {
+      const moves = this.getLegalMoves(piece.position);
+      if (moves.length > 0) {
+        return false;
+      }
+    }
+    return true;
   }
   copyBoard() {
     return this.board.map((row) => {
@@ -540,6 +575,24 @@ class Chess {
         return piece ? piece.copy() : null;
       });
     });
+  }
+  string() {
+    let board = "    a  b  c  d  e  f  g  h\n";
+    board += "  +------------------------+\n";
+    for (let row = 0; row < 8; row++) {
+      board += `${8 - row} !`;
+      for (let col = 0; col < 8; col++) {
+        const piece = this.board[row][col];
+        if (piece) {
+          board += ` ${piece.fen()} `;
+        } else {
+          board += " . ";
+        }
+      }
+      board += "!\n";
+    }
+    board += "  +------------------------+\n";
+    return board;
   }
 
   /* PIECE MOVEMENT */

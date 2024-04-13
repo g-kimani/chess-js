@@ -21,8 +21,8 @@ class GameManger {
     this.display.events.on("promotion", this.game.promotePiece.bind(this.game));
 
     /** game (Chess Class) */
-    this.game.events.on("move", (move) => {
-      console.log("Move", move);
+    this.game.events.on("moved", (move) => {
+      console.log("Moved", move);
       this.handleMove(move);
       this.display.updateTurn(this.game.turn());
     });

@@ -14,6 +14,10 @@ function normaliseFen(fen) {
   return fenArray.join(" ");
 }
 
+function bothKingsPresent(pieces) {
+  return /k/g.test(pieces) && /K/g.test(pieces);
+}
+
 function isValidFen(fen, onlyPosition = false) {
   fen = normaliseFen(fen);
   const [
@@ -24,6 +28,11 @@ function isValidFen(fen, onlyPosition = false) {
     halfMoveClock,
     fullmoveNumber,
   ] = fen.split(" ");
+
+  // check pieces has both kings
+  if (!bothKingsPresent(pieces)) {
+    return false;
+  }
   const rows = pieces.split("/");
   if (rows.length !== 8) {
     return false;

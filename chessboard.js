@@ -236,14 +236,14 @@ class ChessBoard {
     const piece = fromSquare.querySelector(".piece");
     const target = toSquare.querySelector(".piece");
     // this.removePiece(from);
-    if (target) {
-      target.remove();
-    }
+    // if (target) {
+    //   target.remove();
+    // }
 
     // Wait for the animation to finish before updating the piece's position
     if (animation) {
       window.requestAnimationFrame(() => {
-        piece.style.position = "absolute";
+        // piece.style.position = "absolute";
         piece.style.transition = "all 0.3s ease";
         piece.style.transform = `translate(${
           toSquare.offsetLeft - fromSquare.offsetLeft
