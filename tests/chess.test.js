@@ -710,16 +710,47 @@ tests.testGroup("Chess Class", [
           return stalemate;
         }
       ),
-      tests.makeTest("returns move data after a move", true, () => {
-        const chess = new Chess();
-        chess.start();
-        const move = chess.movePiece([6, 0], [4, 0]);
-        return (
-          move.from.row === 6 &&
-          move.from.col === 0 &&
-          move.to.row === 4 &&
-          move.to.col === 0
-        );
-      }),
+      tests.makeTest(
+        "returns move object after a simple pawn move",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start();
+          const move = chess.movePiece([6, 0], [4, 0]);
+          return (
+            move.from.row === 6 &&
+            move.from.col === 0 &&
+            move.to.row === 4 &&
+            move.to.col === 0 &&
+            move.captured === false &&
+            move.castled === false
+          );
+        }
+      ),
+      tests.makeTest(
+        "returns move object containing a captured piece position after capture",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("1K6/8/8/8/8/8/p7/1Pk5 w - - 0 1");
+          const move = chess.movePiece([7, 1], [6, 0]);
+          return move.captured.row === 6 && move.captured.col === 0;
+        }
+      ),
+      tests.makeTest(
+        "returns move object containing castled rook movement after castling king",
+        true,
+        () => {
+          const chess = new Chess();
+          chess.start("1k6/8/8/8/8/8/8/R3K2R w KQ - 0 1");
+          const move = chess.movePiece([7, 4], [7, 6]);
+          return (
+            move.castled.from.row === 7 &&
+            move.castled.from.col === 7 &&
+            move.castled.to.row === 7 &&
+            move.castled.to.col === 5
+          );
+        }
+      ),
     ]),
 ]);
