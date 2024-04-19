@@ -389,14 +389,3 @@ class ChessBoard {
 }
 
 export default ChessBoard;
-
-// const board = new ChessBoard();
-// board.subscribe("click", (e) => console.log("🚀 ~ e", e));
-// console.log("🚀 ~ getPosition:", board.getPosition());
-// setTimeout(() => board.movePiece({ row: 1, col: 0 }, { row: 3, col: 0 }), 1000);
-// board.highlightSquares([
-//   { row: 1, col: 0 },
-//   { row: 3, col: 0 },
-// ]);
-
-// console.log(board.display.children);

@@ -3,10 +3,11 @@ import ChessBoard from "./chessboard.js";
 
 class GameManger {
   constructor() {
-    this.game = new Chess("r3k2r/6P1/8/8/5p2/8/8/R3K2R w KQkq - 0 4");
+    this.game = new Chess();
+    this.game.start();
     this.display = new ChessBoard();
     this.display.initialise();
-    this.display.start("r3k2r/6P1/8/8/5p2/8/8/R3K2R w KQkq - 0 4");
+    this.display.start();
     this.selectedSquare = null;
     this.legalMoves = [];
     this.eventListeners();
@@ -78,7 +79,7 @@ class GameManger {
     }
 
     // move the piece
-    this.game.movePiece(this.selectedSquare, square);
+    this.game.move(this.selectedSquare, square);
   }
   handleMove(move) {
     console.log("handleMove", move);

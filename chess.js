@@ -29,6 +29,7 @@ class Chess {
       w: { k: true, q: true },
       b: { k: true, q: true },
     }; // castling rights - K = king side, Q = queen side.
+    this.positionsMap = {};
     this.colorsInCheck = { w: false, b: false };
     this.events = new EventHandler();
     this.eventListeners();
@@ -289,7 +290,7 @@ class Chess {
     this.nextPlayer();
     this.events.trigger("move", moveData);
   }
-  movePiece(from, to, validate = true) {
+  move(from, to, validate = true) {
     const [fromRow, fromCol] = from;
     const [toRow, toCol] = to;
     if (!inBounds(fromRow, fromCol)) throw new Error("Invalid from square");
@@ -437,8 +438,70 @@ class Chess {
 
     // ! Check for draw conditions
     // 1. Fifty-move rule
+    if (this.halfMoveClock === 50) {
+      this.events.trigger("50move");
+    }
     // 2. Threefold repetition
+    this.updatePositionsMap();
+
     // 3. Insufficient material
+    this.isInsufficientMaterial();
+  }
+  isInsufficientMaterial() {
+    const allPieces = this.board.flat().filter((p) => p !== null);
+
+    // total of 4 pieces possible on board
+    if (allPieces.length > 4) {
+      return false;
+    }
+
+    // make sure there are no queens, rooks, pawns
+    if (
+      allPieces.some(
+        (piece) =>
+          piece.type === "rook" &&
+          piece.type === "queen" &&
+          piece.type === "pawn"
+      )
+    ) {
+      return false;
+    }
+
+    const blackPieces = allPieces.filter((p) => p.color === "b");
+    const whitePieces = allPieces.filter((p) => p.color === "w");
+
+    // either side has two bishops = sufficient
+    for (let side of [blackPieces, whitePieces]) {
+      if (side.filter((p) => p.type === "bishop").length === 2) {
+        return false;
+      }
+    }
+
+    const insufficientPositions = ["kk", "bkk", "kkn", "kknn", "bkkn"];
+    //
+    let pieceFen = allPieces.map((p) => p.fen().toLowerCase());
+    pieceFen.sort();
+    let piecesString = pieceFen.join("");
+
+    if (insufficientPositions.some((pos) => pos === piecesString)) {
+      this.events.trigger("insufficient", pieceFen);
+      return true;
+    }
+  }
+  isThreeFoldRepetition() {
+    return this.positionsMap[position] === 3;
+  }
+  updatePositionsMap() {
+    const position = this.fen().split(" ")[0];
+    if (this.positionsMap[position]) {
+      this.positionsMap[position] += 1;
+      // three fold repetition of a position
+      if (this.positionsMap[position] === 3) {
+        this.events.trigger("threefold");
+      }
+    } else {
+      this.positionsMap[position] = 1;
+    }
   }
   hasMove(moves, move) {
     return moves.some((m) => m[0] === move[0] && m[1] === move[1]);
