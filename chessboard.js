@@ -58,7 +58,7 @@ class ChessBoard {
     this.status = document.getElementById("status");
     this.events = new EventHandler();
     this.disabled = false;
-    this.orientation = "b";
+    this.orientation = "w";
     this.promotionMove = null;
     // this.initialise();
     document
@@ -76,15 +76,20 @@ class ChessBoard {
       for (let col = 0; col < 8; col++) {
         const square = document.createElement("div");
         square.className = "square";
-        square.dataset.row = row;
-        square.dataset.col = col;
+        if (this.orientation === "w") {
+          square.dataset.row = row;
+          square.dataset.col = col;
+        } else {
+          square.dataset.row = 7 - row;
+          square.dataset.col = 7 - col;
+        }
         const squareColor =
           (row + col) % 2 === 0 ? "light-square" : "dark-square";
         square.classList.add(squareColor);
         if (col === 0) {
           const label = document.createElement("span");
           label.classList.add("rank-label", "label");
-          if (this.orientation === "w") {
+          if (this.orientation === "b") {
             label.textContent = row + 1;
           } else {
             label.textContent = 8 - row;
@@ -94,7 +99,7 @@ class ChessBoard {
         if (row === 7) {
           const label = document.createElement("span");
           label.classList.add("file-label", "label");
-          if (this.orientation === "w") {
+          if (this.orientation === "b") {
             label.textContent = String.fromCharCode(104 - col);
           } else {
             label.textContent = String.fromCharCode(97 + col);
@@ -385,9 +390,9 @@ class ChessBoard {
   flip() {
     this.orientation = this.orientation === "w" ? "b" : "w";
     const position = this.getPosition();
-    const flippedPosition = position.split("/").reverse().join("/");
     this.clear();
-    this.setPosition(flippedPosition);
+    this.initialise();
+    this.setPosition(position);
   }
   setStatus(status) {
     document.getElementById("status").textContent = status;
