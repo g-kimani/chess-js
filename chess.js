@@ -41,20 +41,20 @@ class Chess {
     document.getElementById("fen").value = position;
     document.getElementById("fenBtn").addEventListener("click", () => {
       const fen = this.fen();
-      console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
+      //console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
       document.getElementById("fen").value = fen;
     });
     document.getElementById("checkBtn").addEventListener("click", () => {
-      console.log("Checking checks");
+      //console.log("Checking checks");
       this.players.forEach((player) => {
-        console.log(`${player.color}`);
+        //console.log(`${player.color}`);
         console.log(
           `${player.color} is in check: ${this.inCheck(player.color)}`
         );
       });
     });
     document.getElementById("statsBtn").addEventListener("click", () => {
-      console.log(this.getStats());
+      //console.log(this.getStats());
     });
   }
   getStats() {
@@ -245,12 +245,10 @@ class Chess {
   oppositeColor(color) {
     return color === "w" ? "b" : "w";
   }
-  promotePiece(pieceType, move) {
-    console.count("Promote");
-    console.log("🚀 ~ Chess ~ promotePiece ~ move:", move);
-    const [row, col] = move.to;
-    const [origRow, origCol] = move.from;
-    console.log("🚀 ~ Chess ~ promotePiece ~ this.board:", this.fen());
+  promote(pieceType, move) {
+    // console.count("Promote");
+    const { row, col } = move.to;
+    const { row: origRow, col: origCol } = move.from;
     const piece = this.board[origRow][origCol];
     if (piece.color !== this.turn()) {
       return false;
@@ -288,7 +286,7 @@ class Chess {
 
     this.updateGameStats(moveData);
     this.nextPlayer();
-    this.events.trigger("move", moveData);
+    this.events.trigger("moved", moveData);
   }
   move(from, to, validate = true) {
     const [fromRow, fromCol] = from;
@@ -305,11 +303,11 @@ class Chess {
     };
 
     if (piece === null) {
-      console.log("No piece to move");
+      //console.log("No piece to move");
       return false;
     }
     if (validate && piece.color !== this.turn()) {
-      console.log("Not your turn");
+      //console.log("Not your turn");
       return false;
     }
 
@@ -319,12 +317,12 @@ class Chess {
     }
 
     if (validate && !this.hasMove(legalMoves, to)) {
-      console.log("Illegal move");
+      //console.log("Illegal move");
       return false;
     }
     // promotion
     if (piece.type === "pawn" && (toRow === 0 || toRow === 7)) {
-      console.log("Promotion");
+      //console.log("Promotion");
       this.events.trigger("requestPromotion", piece.color, {
         from,
         to,
@@ -338,7 +336,7 @@ class Chess {
       this.board[toRow][toCol] === null
     ) {
       const captureRow = piece.color === "w" ? toRow + 1 : toRow - 1;
-      console.log("Enpassant capture", captureRow, toCol);
+      //console.log("Enpassant capture", captureRow, toCol);
       this.board[captureRow][toCol] = null;
       moveData.captured = { row: captureRow, col: toCol };
     } else {
@@ -709,12 +707,12 @@ class Chess {
     });
   }
   generatePawnMoves(square, board) {
-    // console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
+    // //console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
     const [row, col] = square;
     const pawn = board[row][col];
     const moves = [];
     const direction = pawn.color === "w" ? -1 : 1;
-    // console.log(board[row + direction], row, direction);
+    // //console.log(board[row + direction], row, direction);
     if (board[row + direction][col] === null) {
       moves.push([row + direction, col]);
       if (

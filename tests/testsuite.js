@@ -31,7 +31,7 @@ class TestSuite {
     return test;
   }
   runTests(tests = this.tests) {
-    console.log("Running tests...");
+    //console.log("Running tests...");
     let passedNum = 0;
     tests.forEach((test) => {
       if (typeof test === "function") {
@@ -42,10 +42,10 @@ class TestSuite {
         const start = performance.now();
         test.run();
         const end = performance.now();
-        console.log(`✅ ${test.name} | ${(end - start).toFixed(2)}ms`);
+        //console.log(`✅ ${test.name} | ${(end - start).toFixed(2)}ms`);
         passedNum++;
       } catch (e) {
-        console.log(`❌ ${test.name} | ${e.message}`);
+        //console.log(`❌ ${test.name} | ${e.message}`);
       }
     });
     return passedNum;

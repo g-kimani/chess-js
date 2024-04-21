@@ -57,6 +57,7 @@ class ChessBoard {
     this.display = document.getElementById("chessboard");
     this.status = document.getElementById("status");
     this.events = new EventHandler();
+    this.disabled = false;
     this.orientation = "b";
     this.promotionMove = null;
     // this.initialise();
@@ -132,21 +133,23 @@ class ChessBoard {
     const closeBtn = document.createElement("button");
     closeBtn.classList.add("close");
     closeBtn.textContent = "X";
-    closeBtn.addEventListener("click", this.hidePromotionSelection);
+    closeBtn.addEventListener("click", this.hidePromotionSelection.bind(this));
     selector.appendChild(closeBtn);
   }
   triggerClick(event) {
+    // if (this.disabled) return;
     const square = event.target.closest(".square");
     const row = parseInt(square.dataset.row);
     const col = parseInt(square.dataset.col);
     // this.emit("click", [row, col]);
     this.events.trigger("click", [row, col]);
-    // console.log(this.display.children[row * 8 + col]);
-    // console.log("🚀 ~ ChessBoard ~ triggerClick ~ [row, col]", [row, col]);
+    // //console.log(this.display.children[row * 8 + col]);
+    //console.log("🚀 ~ ChessBoard ~ triggerClick ~ [row, col]", [row, col]);
   }
   start(position = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR") {
     this.initialise();
     this.setPosition(position);
+    this.disabled = false;
   }
   reset() {
     // remove the current board and create a new one
@@ -223,13 +226,13 @@ class ChessBoard {
     return position;
   }
   movePiece(from, to, animation = true) {
-    // console.log("🚀 ~ ChessBoard ~ movePiece ~ from, to:", from, to);
-    // console.log("🚀 ~ ChessBoard ~ movePiece ~ to:", to);
-    // console.log("🚀 ~ ChessBoard ~ movePiece ~ from:", from);
+    // //console.log("🚀 ~ ChessBoard ~ movePiece ~ from, to:", from, to);
+    // //console.log("🚀 ~ ChessBoard ~ movePiece ~ to:", to);
+    // //console.log("🚀 ~ ChessBoard ~ movePiece ~ from:", from);
     const fromSquare = this.display.querySelector(
       `[data-row="${from.row}"][data-col="${from.col}"]`
     );
-    // console.log("🚀 ~ ChessBoard ~ movePiece ~ fromSquare:", fromSquare);
+    // //console.log("🚀 ~ ChessBoard ~ movePiece ~ fromSquare:", fromSquare);
     const toSquare = this.display.querySelector(
       `[data-row="${to.row}"][data-col="${to.col}"]`
     );
@@ -248,6 +251,7 @@ class ChessBoard {
         piece.style.transform = `translate(${
           toSquare.offsetLeft - fromSquare.offsetLeft
         }px, ${toSquare.offsetTop - fromSquare.offsetTop}px)`;
+        piece.style.zIndex = 100;
 
         setTimeout(() => {
           toSquare.appendChild(piece);
@@ -280,12 +284,12 @@ class ChessBoard {
     squareElement.appendChild(image);
   }
   setPiece(square, piece) {
-    // console.log("🚀 ~ ChessBoard ~ setPiece ~ square, piece:", square, piece);
+    // //console.log("🚀 ~ ChessBoard ~ setPiece ~ square, piece:", square, piece);
     const squareElement = this.display.querySelector(
       `[data-row="${square.row}"][data-col="${square.col}"]`
     );
     const image = squareElement.querySelector(".piece");
-    // console.log("🚀 ~ ChessBoard ~ setPiece ~ image:", image);
+    // //console.log("🚀 ~ ChessBoard ~ setPiece ~ image:", image);
     if (image) {
       image.src = `assets/chess-pieces/${piece.color}${piece.type[0]}.png`;
       image.alt = piece.type;
@@ -308,10 +312,15 @@ class ChessBoard {
     return null;
   }
   showPromotionSelection(move, color) {
+    //console.log("🚀 ~ ChessBoard ~ showPromotionSelection ~ move:", move);
     const square = move.to;
     const squareElement = this.display.querySelector(
-      `[data-row="${square[0]}"][data-col="${square[1]}"]`
+      `[data-row="${square.row}"][data-col="${square.col}"]`
     );
+    // console.log(
+    //   "🚀 ~ ChessBoard ~ showPromotionSelection ~ squareElement:",
+    //   squareElement
+    // );
     this.promotionMove = move;
     const selector = document.getElementById("promotion");
     selector.classList.toggle("hidden");
@@ -320,7 +329,7 @@ class ChessBoard {
       const image = button.querySelector("img");
       image.src = `assets/chess-pieces/${color}${button.id[0]}.png`;
     });
-    if (square[0] < 4) {
+    if (square.row < 4) {
       selector.style.top = `${
         squareElement.offsetTop + squareElement.offsetHeight
       }px`;
@@ -331,10 +340,13 @@ class ChessBoard {
     }
     // selector.style.top = `${squareElement.offsetTop}px`;
     selector.style.left = `${squareElement.offsetLeft}px`;
+
+    this.disabled = true;
   }
   hidePromotionSelection() {
     const selector = document.getElementById("promotion");
     selector.classList.add("hidden");
+    this.disabled = false;
   }
   highlightSquares(squares, type = "default") {
     squares.forEach((square) => {

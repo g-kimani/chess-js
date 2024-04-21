@@ -178,7 +178,7 @@ tests.testGroup(
               continue;
             }
             const position = indexToRowCol(i);
-            // console.log("🚀 ~ tests.makeTest ~ position:", position);
+            // //console.log("🚀 ~ tests.makeTest ~ position:", position);
             const piece = chess.board[position.row][position.col];
             if (piece.fen() !== normalisedPosition[i]) {
               throw new Error(

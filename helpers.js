@@ -69,4 +69,8 @@ function inBounds(row, col) {
   return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
 
-export { normaliseFen, isValidFen, indexToRowCol, inBounds };
+function enemyBankRank(color) {
+  return color === "w" ? 0 : 7;
+}
+
+export { normaliseFen, isValidFen, indexToRowCol, inBounds, enemyBankRank };
