@@ -16,7 +16,27 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #222;
+  background-color: #141414;
+}
+
+.background-image {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  /* background-image: url("./assets/clear-board.png"); */
+  background-size: cover;
+  background-position: 360px;
+  filter: blur(5px);
+}
+
+.game-container {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  height: 100%;
 }
 
 /* Chessboard */
@@ -40,7 +60,8 @@ body {
 #chessboard {
   display: grid;
   grid-template: repeat(8, 1fr) / repeat(8, 1fr);
-  width: 700px;
+  width: 650px;
+  /* height: 100%; */
 }
 
 .piece {
@@ -93,19 +114,91 @@ body {
   bottom: 5px;
   right: 5px;
 }
-
+.flex {
+  display: flex;
+  /* justify-content: center; */
+  /* align-items: center; */
+}
 /* Controls */
 
 #controls {
   display: flex;
   justify-content: center;
   gap: 1rem;
-  margin-top: 1rem;
+  /* margin-top: 1rem; */
   flex-direction: column;
-  background-color: #eae9d2;
+  background-color: #21201d;
   padding: 20px 10px;
-  margin: 5px;
+  /* margin: 5px; */
   border-radius: 10px;
+  /* height: 100%; */
+  color: #fff;
+}
+
+#controls > div.game {
+  display: flex;
+  justify-content: space-between;
+  /* gap: 1rem; */
+}
+
+.hidden {
+  display: none !important;
+}
+
+.white-box {
+  background-color: #fff;
+  color: #000;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.black-box {
+  background-color: #141414;
+  color: #fff;
+  padding: 5px;
+  border-radius: 4px;
+  margin: 5px 0px;
+}
+
+.game-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  /* max-height: 200px; */
+  padding: 5px;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  height: 100%;
+}
+
+.timer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* gap: 1rem; */
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  background-color: #4b7399;
+  border-radius: 4px;
+  padding: 5px 10px;
+}
+
+/* .timers-captures > div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+} */
+
+#w-timer {
+  background-color: white;
+  color: #141414;
+}
+
+#b-timer {
+  background-color: #141414;
 }
 
 #promotion {
@@ -147,6 +240,19 @@ body {
   width: 100%;
 }
 
-.hidden {
-  display: none !important;
+.button {
+  cursor: pointer;
+  border: none;
+  transition: all 0.3s;
+  font-size: 1rem;
+  /* font-weight: bold; */
+  color: #fff;
+  background-color: #141414;
+  border-radius: 4px;
+  padding: 5px 10px;
+}
+
+.button:hover {
+  background-color: #4b7399;
+  font-size: 1.05rem;
 }

@@ -68,6 +68,10 @@ class ChessBoard {
       .getElementById("startBtn")
       .addEventListener("click", () => this.events.trigger("start"));
     // this.initialise();
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      this.events.trigger("clear");
+      this.clear();
+    });
   }
   initialise() {
     // console.count("initialise");
@@ -402,6 +406,9 @@ class ChessBoard {
   }
   updateTurn(turn) {
     document.getElementById("turn").textContent = turn;
+  }
+  updateTimer(color, time) {
+    document.getElementById(`${color}-timer`).textContent = time;
   }
 }
 

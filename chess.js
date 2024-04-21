@@ -8,17 +8,10 @@ const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 // const STARTING_POSITION = "8/5kP1/8/8/8/8/K7/8 w - - 0 1";
 
-class Player {
-  constructor(name, color) {
-    this.name = name;
-    this.color = color;
-  }
-}
-
 class Chess {
   constructor() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
-    this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
+    // this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.currentPlayer = 0;
     this.halfMoveClock = 0; // The number of halfmoves since the last capture or pawn advance, used for the fifty-move rule.
     this.fullMoveNumber = 1;
@@ -32,30 +25,30 @@ class Chess {
     this.positionsMap = {};
     this.colorsInCheck = { w: false, b: false };
     this.events = new EventHandler();
-    this.eventListeners();
+    this.registerEventListeners();
 
     // this.load(position);
   }
   // ! Chess class may not need to know about the players or event listeners
-  eventListeners(position = STARTING_POSITION) {
+  registerEventListeners(position = STARTING_POSITION) {
     document.getElementById("fen").value = position;
     document.getElementById("fenBtn").addEventListener("click", () => {
       const fen = this.fen();
       //console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
       document.getElementById("fen").value = fen;
     });
-    document.getElementById("checkBtn").addEventListener("click", () => {
-      //console.log("Checking checks");
-      this.players.forEach((player) => {
-        //console.log(`${player.color}`);
-        console.log(
-          `${player.color} is in check: ${this.inCheck(player.color)}`
-        );
-      });
-    });
-    document.getElementById("statsBtn").addEventListener("click", () => {
-      //console.log(this.getStats());
-    });
+    // document.getElementById("checkBtn").addEventListener("click", () => {
+    //   //console.log("Checking checks");
+    //   this.players.forEach((player) => {
+    //     //console.log(`${player.color}`);
+    //     console.log(
+    //       `${player.color} is in check: ${this.inCheck(player.color)}`
+    //     );
+    //   });
+    // });
+    // document.getElementById("statsBtn").addEventListener("click", () => {
+    //console.log(this.getStats());
+    // });
   }
   getStats() {
     return {
@@ -81,10 +74,11 @@ class Chess {
     // this would trigger the timer for a player if it's a timed game
     // back in manager class this would be more suited to disabling and enabling buttons
     this.load(position);
+    this.events.trigger("start");
   }
   reset() {
     this.board = new Array(8).fill(null).map(() => new Array(8).fill(null));
-    this.currentPlayer = 0;
+    this.currentPlayer = "w";
     this.halfMoveClock = 0;
     this.fullMoveNumber = 1;
     this.selected = null;
@@ -97,10 +91,10 @@ class Chess {
     this.colorsInCheck = { w: false, b: false };
   }
   turn() {
-    return this.players[this.currentPlayer].color;
+    return this.currentPlayer;
   }
   nextPlayer() {
-    this.currentPlayer = 1 - this.currentPlayer;
+    this.currentPlayer = this.currentPlayer === "w" ? "b" : "w";
   }
   fen() {
     let pieces = "";
@@ -176,7 +170,7 @@ class Chess {
       halfMoveClock,
       fullMoveNumber,
     ] = fen.split(" ");
-    this.currentPlayer = turn === "b" ? 1 : 0;
+    this.currentPlayer = turn;
     let rows = pieces.split("/");
 
     for (let row = 0; row < 8; row++) {

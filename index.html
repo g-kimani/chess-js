@@ -9,38 +9,81 @@
 </head>
 
 <body class="roboto-mono-variable">
-    <div style="position:relative;">
-        <div id="chessboard"></div>
-        <div id="promotion" class="hidden">
-            <button id="queen" class="promotion-btn">
-                <img src="./assets/chess-pieces/wq.png" alt="Queen">
-            </button>
-            <button id="rook" class="promotion-btn">
-                <img src="./assets/chess-pieces/wr.png" alt="Rook">
-            </button>
-            <button id="bishop" class="promotion-btn">
-                <img src="./assets/chess-pieces/wb.png" alt="Bishop">
-            </button>
-            <button id="night" class="promotion-btn">
-                <img src="./assets/chess-pieces/wn.png" alt="Knight">
-            </button>
-            <button class="close">Close</button>
+    <div class="background-image"></div>
+    <div class="game-container">
+        <div style="position:relative;">
+            <div id="chessboard"></div>
+            <div id="promotion" class="hidden">
+                <button id="queen" class="promotion-btn">
+                    <img src="./assets/chess-pieces/wq.png" alt="Queen">
+                </button>
+                <button id="rook" class="promotion-btn">
+                    <img src="./assets/chess-pieces/wr.png" alt="Rook">
+                </button>
+                <button id="bishop" class="promotion-btn">
+                    <img src="./assets/chess-pieces/wb.png" alt="Bishop">
+                </button>
+                <button id="night" class="promotion-btn">
+                    <img src="./assets/chess-pieces/wn.png" alt="Knight">
+                </button>
+                <button class="close">Close</button>
+            </div>
+        </div>
+        <div id="controls">
+            <h3>Turn: <span id="turn"></span></h3>
+            <div>
+                <div class="flex white-box">
+                    <div id="b-timer" class="timer">
+                        00:00
+                    </div>
+                    <div id="b-captures" class="captures">
+                        <div class="flex">
+                            <div id="b-captures-pawn" class="captures-piece"></div>
+                            <div id="b-captures-rook" class="captures-piece"></div>
+                            <div id="b-captures-knight" class="captures-piece"></div>
+                            <div id="b-captures-bishop" class="captures-piece"></div>
+                            <div id="b-captures-queen" class="captures-piece"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex black-box">
+                    <div id="w-timer" class="timer">
+                        00:00
+                    </div>
+                    <div id="w-captures" class="captures">
+                        <div class="flex">
+                            <div id="w-captures-pawn" class="captures-piece"></div>
+                            <div id="w-captures-rook" class="captures-piece"></div>
+                            <div id="w-captures-knight" class="captures-piece"></div>
+                            <div id="w-captures-bishop" class="captures-piece"></div>
+                            <div id="w-captures-queen" class="captures-piece"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="game-history">
+                <h2>Game History</h2>
+                <div id="history"></div>
+            </div>
+            <h2>Status: <span id="status"></span></h2>
+            <label for="fen">FEN:
+                <input id="fen" type="text" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR">
+            </label>
+            <!-- <button id="startBtn">Start</button>
+            <button id="clearBtn">Clear</button>
+            <button id="flipBtn">Flip</button>
+            <button id="checkBtn">Check</button>
+            <button id="statsBtn">Stats</button>
+            <button id="testBtn">Test</button> -->
+            <div class="game">
+                <button id="startBtn" class="button">Start</button>
+                <button id="clearBtn" class="button">Clear</button>
+                <button id="flipBtn" class="button">Flip</button>
+                <button id="fenBtn" class="button">FEN</button>
+            </div>
         </div>
     </div>
-    <div id="controls">
-        <h2>Status: <span id="status"></span></h2>
-        <h2>Turn: <span id="turn"></span></h2>
-        <label for="fen">FEN:
-            <input id="fen" type="text" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR">
-        </label>
-        <button id="startBtn">Start</button>
-        <button id="clearBtn">Clear</button>
-        <button id="flipBtn">Flip</button>
-        <button id="fenBtn">Get FEN</button>
-        <button id="checkBtn">Check</button>
-        <button id="statsBtn">Stats</button>
-        <button id="testBtn">Test</button>
-    </div>
+
     <script type="module" src="./EventHandler.js"></script>
     <script type="module" src="./pieces.js"></script>
     <script type="module" src="./chessboard.js"></script>

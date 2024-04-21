@@ -1,6 +1,56 @@
+import EventHandler from "./EventHandler.js";
 import Chess from "./chess.js";
 import ChessBoard from "./chessboard.js";
 import { enemyBankRank } from "./helpers.js";
+
+class CountdownTimer {
+  constructor(timeInMinutes) {
+    this.time = timeInMinutes * 60;
+    this.interval = null;
+    this.running = false;
+    this.events = new EventHandler();
+  }
+  start() {
+    if (this.running) {
+      return;
+    }
+    this.interval = setInterval(() => {
+      this.time--;
+      this.events.trigger("tick", this.string());
+      if (this.time === 0) {
+        this.events.trigger("timeout", this.string());
+        this.stop();
+      }
+    }, 1000);
+    this.running = true;
+  }
+  stop() {
+    clearInterval(this.interval);
+    this.running = false;
+    this.interval = null;
+    this.events.trigger("stop", this.string());
+  }
+  reset() {
+    this.time = 0;
+    this.events.trigger("reset", this.string());
+  }
+  string() {
+    let seconds = this.time % 60;
+    let minutes = Math.floor(this.time / 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}`;
+  }
+}
+
+class Player {
+  constructor(name, color) {
+    this.name = name;
+    this.color = color;
+    this.timer = new CountdownTimer(5);
+  }
+}
 
 class GameManger {
   constructor() {
@@ -11,6 +61,8 @@ class GameManger {
     this.display.start();
     this.selectedSquare = null;
     this.legalMoves = [];
+    this.currentPlayer = "w";
+    this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.eventListeners();
   }
   eventListeners() {
@@ -18,13 +70,22 @@ class GameManger {
     this.display.events.on("start", this.start.bind(this));
     this.display.events.on("click", (square) => this.handleClick(square));
     this.display.events.on("promotion", this.handlePromotion.bind(this));
+    this.display.events.on("clear", this.reset.bind(this));
 
     /** game (Chess Class) */
+
+    this.game.events.on("start", () => {
+      console.log(this.game.string());
+      this.display.updateTurn(this.game.turn());
+      this.startPlayerTimer(this.game.turn());
+    });
     this.game.events.on("moved", (move) => {
       //console.log("Moved", move);
       console.log(this.game.string());
       this.handleMove(move);
       this.display.updateTurn(this.game.turn());
+      this.stopPlayerTimer(move.piece.color);
+      this.startPlayerTimer(this.game.turn());
     });
     this.game.events.on("check", (color) => {
       //console.log("Check", color);
@@ -48,15 +109,33 @@ class GameManger {
     //console.log("🚀 ~ GameManger ~ start ~ fenInput:", fenInput);
     // this.loadFen(fenInput);
     this.display.clear();
-    this.game.load(fenInput);
+    // this.game.load(fenInput);
     this.display.start(fenInput);
-    // this.game.start();
+    this.game.start(fenInput);
   }
   stop() {
     this.game.stop();
   }
-  restart() {
-    this.game.restart();
+  reset() {
+    this.game.reset();
+  }
+  startPlayerTimer(color) {
+    const player = this.getPlayer(color);
+    player.timer.events.on("tick", (time) => {
+      this.display.updateTimer(color, time);
+    });
+    player.timer.events.on("timeout", () => {
+      // ! need to implement
+      this.game.resign(color);
+    });
+    player.timer.start();
+  }
+  stopPlayerTimer(color) {
+    const player = this.getPlayer(color);
+    player.timer.stop();
+  }
+  getPlayer(turn) {
+    return this.players.find((player) => player.color === turn);
   }
   handleClick(square) {
     // no square selected
