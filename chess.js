@@ -1,8 +1,6 @@
 import { Pawn, Rook, Knight, Bishop, Queen, King } from "./pieces.js";
-// const { Pawn, Rook, Knight, Bishop, Queen, King } = require("./pieces.js");
 import EventHandler from "./EventHandler.js";
 import { normaliseFen, isValidFen, inBounds } from "./helpers.js";
-// const EventHandler = require("./EventHandler.js");
 
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -22,10 +20,21 @@ class Chess {
       w: { k: true, q: true },
       b: { k: true, q: true },
     }; // castling rights - K = king side, Q = queen side.
-    this.positionsMap = {};
+    this.moveHistory = [];
+    this.positionsCounter = {};
     this.colorsInCheck = { w: false, b: false };
     this.events = new EventHandler();
     this.registerEventListeners();
+
+    this.events.on("moved", (move) => {
+      this.moveHistory.push(move);
+      this.updateGameStats(move);
+      this.nextPlayer();
+      console.log(
+        "🚀 ~ Chess ~ this.events.on ~ this.moveHistory:",
+        this.moveHistory
+      );
+    });
 
     // this.load(position);
   }
@@ -247,7 +256,16 @@ class Chess {
     if (piece.color !== this.turn()) {
       return false;
     }
-    const isCapture = this.board[row][col] !== null;
+    const captured = this.board[row][col];
+
+    const moveData = {
+      from: { row: origRow, col: origCol },
+      to: { row, col },
+      captured: captured,
+      promotion: pieceType,
+      number: this.fullMoveNumber,
+      before: this.fen(),
+    };
 
     this.board[row][col] = null;
     let newPiece;
@@ -270,16 +288,23 @@ class Chess {
     this.board[origRow][origCol] = null;
     this.board[row][col] = newPiece;
 
-    const moveData = {
-      from: { row: origRow, col: origCol },
-      to: { row, col },
-      piece: newPiece,
-      captured: isCapture ? { row, col } : false,
-      promotion: true,
-    };
+    moveData.piece = newPiece;
 
-    this.updateGameStats(moveData);
-    this.nextPlayer();
+    const opponent = this.oppositeColor(piece.color);
+    // check king in check
+    if (this.inCheck(opponent)) {
+      this.colorsInCheck[opponent] = true;
+      moveData.check = true;
+      this.events.trigger("check", opponent);
+
+      // only check for checkmate if the king is in check
+      if (this.isCheckmate(opponent)) {
+        this.events.trigger("checkmate", opponent);
+        moveData.checkmate = true;
+      }
+    }
+
+    moveData.after = this.fen();
     this.events.trigger("moved", moveData);
   }
   move(from, to, validate = true) {
@@ -294,6 +319,8 @@ class Chess {
       piece: piece,
       captured: false,
       castled: false,
+      number: this.fullMoveNumber,
+      before: this.fen(),
     };
 
     if (piece === null) {
@@ -331,12 +358,13 @@ class Chess {
     ) {
       const captureRow = piece.color === "w" ? toRow + 1 : toRow - 1;
       //console.log("Enpassant capture", captureRow, toCol);
+      const capturePiece = this.board[captureRow][toCol];
       this.board[captureRow][toCol] = null;
-      moveData.captured = { row: captureRow, col: toCol };
+      moveData.captured = capturePiece;
     } else {
       // normal capture
       if (this.board[toRow][toCol] !== null) {
-        moveData.captured = { row: toRow, col: toCol };
+        moveData.captured = this.board[toRow][toCol];
       }
     }
 
@@ -359,8 +387,22 @@ class Chess {
       this.enPassant = null;
     }
 
-    this.updateGameStats(moveData);
-    this.nextPlayer();
+    const opponent = this.oppositeColor(piece.color);
+    // check king in check
+    if (this.inCheck(opponent)) {
+      this.colorsInCheck[opponent] = true;
+      moveData.check = true;
+      this.events.trigger("check", opponent);
+
+      // only check for checkmate if the king is in check
+      if (this.isCheckmate(opponent)) {
+        this.events.trigger("checkmate", opponent);
+        moveData.checkmate = true;
+      }
+    }
+
+    moveData.after = this.fen();
+    console.log("🚀 ~ Chess ~ move ~ moveData:", moveData);
     this.events.trigger("moved", moveData);
     return moveData;
   }
@@ -409,19 +451,7 @@ class Chess {
     this.updateCastlingRights(piece, from);
 
     const opponent = this.oppositeColor(this.turn());
-
-    // check king in check
-    if (this.inCheck(opponent)) {
-      this.colorsInCheck[opponent] = true;
-      this.events.trigger("check", opponent);
-    }
-
-    // ? may only need to check for checkmate and stalemate if the king is in check
-    // check for checkmate
-    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT PROTECT THE KING
-    if (this.isCheckmate(opponent)) {
-      this.events.trigger("checkmate", opponent);
-    }
+    console.log("🚀 ~ Chess ~ updateGameStats ~ opponent:", opponent);
 
     // check for stalemate
     if (this.isStalemate(opponent)) {
@@ -481,18 +511,18 @@ class Chess {
     }
   }
   isThreeFoldRepetition() {
-    return this.positionsMap[position] === 3;
+    return this.positionsCounter[position] === 3;
   }
   updatePositionsMap() {
     const position = this.fen().split(" ")[0];
-    if (this.positionsMap[position]) {
-      this.positionsMap[position] += 1;
+    if (this.positionsCounter[position]) {
+      this.positionsCounter[position] += 1;
       // three fold repetition of a position
-      if (this.positionsMap[position] === 3) {
+      if (this.positionsCounter[position] === 3) {
         this.events.trigger("threefold");
       }
     } else {
-      this.positionsMap[position] = 1;
+      this.positionsCounter[position] = 1;
     }
   }
   hasMove(moves, move) {
@@ -651,6 +681,15 @@ class Chess {
   }
 
   /* PIECE MOVEMENT */
+  canMove(from, to) {
+    const piece = this.getSquare(from);
+    if (!piece) {
+      return false;
+    }
+    const moves = this.getLegalMoves(from);
+    return moves.some((move) => move[0] === to[0] && move[1] === to[1]);
+  }
+
   // ! Could be moved to a separate class
   getLegalMoves(square, board = this.board, pseudo = false) {
     const [row, col] = square;
@@ -897,6 +936,12 @@ class Chess {
     }
 
     return moves;
+  }
+  getPieceLocations(type, color) {
+    const pieces = this.board.flat().filter((piece) => {
+      return piece && piece.type === type && piece.color === color;
+    });
+    return pieces.map((piece) => piece.position);
   }
 }
 

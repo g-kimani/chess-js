@@ -65,6 +65,10 @@ function indexToRowCol(index) {
   return { row: Math.floor(index / 8), col: index % 8 };
 }
 
+function posToIndex(row, col) {
+  return row * 8 + col;
+}
+
 function inBounds(row, col) {
   return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
@@ -73,4 +77,11 @@ function enemyBankRank(color) {
   return color === "w" ? 0 : 7;
 }
 
-export { normaliseFen, isValidFen, indexToRowCol, inBounds, enemyBankRank };
+export {
+  normaliseFen,
+  isValidFen,
+  indexToRowCol,
+  inBounds,
+  enemyBankRank,
+  posToIndex,
+};

@@ -1,61 +1,11 @@
 import EventHandler from "./EventHandler.js";
+import { isValidFen } from "./helpers.js";
 
-function normaliseFen(fen) {
-  const fenArray = fen.split(" ");
-  let pieces = fenArray[0];
-  pieces = pieces
-    .replace(/8/g, "11111111")
-    .replace(/7/g, "1111111")
-    .replace(/6/g, "111111")
-    .replace(/5/g, "11111")
-    .replace(/4/g, "1111")
-    .replace(/3/g, "111")
-    .replace(/2/g, "11");
-  fenArray[0] = pieces;
-  return fenArray.join(" ");
-}
-
-function validateFen(fen, onlyPosition = false) {
-  fen = normaliseFen(fen);
-  const [
-    pieces,
-    turn,
-    castlingRights,
-    enpassant,
-    halfMoveClock,
-    fullmoveNumber,
-  ] = fen.split(" ");
-  const rows = pieces.split("/");
-  if (rows.length !== 8) {
-    return false;
-  }
-  for (let row of rows) {
-    if (row.length !== 8 || !/^([1prnbqkPRNBQK]+)$/.test(row)) {
-      return false;
-    }
-  }
-  if (onlyPosition) {
-    return true;
-  }
-
-  if (!"wb".includes(turn)) {
-    return false;
-  }
-  if (!/^(-|[KQkq]+)$/.test(castlingRights)) {
-    return false;
-  }
-  if (!/^(-|[a-h][36])$/.test(enpassant)) {
-    return false;
-  }
-  if (isNaN(halfMoveClock) || isNaN(fullmoveNumber)) {
-    return false;
-  }
-  return true;
-}
 class ChessBoard {
   constructor() {
     this.display = document.getElementById("chessboard");
     this.status = document.getElementById("status");
+    this.history = document.getElementById("history");
     this.events = new EventHandler();
     this.disabled = false;
     this.orientation = "w";
@@ -176,7 +126,7 @@ class ChessBoard {
     this.clearHighlights();
   }
   setPosition(fen) {
-    if (!validateFen(fen, true)) {
+    if (!isValidFen(fen, true)) {
       throw new Error("Attempted to set position with invalid FEN");
     }
     let pieces = fen.split(" ")[0];
@@ -399,6 +349,7 @@ class ChessBoard {
     this.setPosition(position);
   }
   setStatus(status) {
+    console.trace("🚀 ~ ChessBoard ~ setStatus ~ status:", status);
     document.getElementById("status").textContent = status;
   }
   clearStatus() {
@@ -409,6 +360,43 @@ class ChessBoard {
   }
   updateTimer(color, time) {
     document.getElementById(`${color}-timer`).textContent = time;
+  }
+  updateMoveHistory(move) {
+    console.log("🚀 ~ ChessBoard ~ updateMoveHistory ~ move:", move);
+    let moveElement = this.history.querySelector(`#move-${move.number}`);
+    if (!moveElement) {
+      moveElement = document.createElement("div");
+      moveElement.id = `move-${move.number}`;
+
+      const moveNumber = document.createElement("span");
+      moveNumber.classList.add("move-number");
+      moveElement.appendChild(moveNumber);
+
+      const whiteMove = document.createElement("span");
+      whiteMove.classList.add("white-move");
+      moveElement.appendChild(whiteMove);
+
+      const blackMove = document.createElement("span");
+      blackMove.classList.add("black-move");
+      moveElement.appendChild(blackMove);
+
+      this.history.appendChild(moveElement);
+    }
+    const moveNumber = moveElement.querySelector(".move-number");
+    moveNumber.textContent = `${move.number}.`;
+    if (move.piece.color === "w") {
+      const whiteMove = moveElement.querySelector(".white-move");
+      whiteMove.textContent = move.san;
+      whiteMove.addEventListener("click", () => {
+        console.log("move - white", move);
+      });
+    } else {
+      const blackMove = moveElement.querySelector(".black-move");
+      blackMove.textContent = move.san;
+      blackMove.addEventListener("click", () => {
+        console.log("move - black", move);
+      });
+    }
   }
 }
 
