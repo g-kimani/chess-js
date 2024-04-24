@@ -13,6 +13,23 @@ class Piece {
   copy() {
     return new this.constructor(this.color, this.position);
   }
+
+  static create(type, color, position) {
+    switch (type) {
+      case "pawn":
+        return new Pawn(color, position);
+      case "rook":
+        return new Rook(color, position);
+      case "night":
+        return new Knight(color, position);
+      case "bishop":
+        return new Bishop(color, position);
+      case "queen":
+        return new Queen(color, position);
+      case "king":
+        return new King(color, position);
+    }
+  }
 }
 
 class Pawn extends Piece {

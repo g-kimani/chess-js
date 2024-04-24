@@ -11,6 +11,7 @@ class ChessBoard {
     this.orientation = "w";
     this.promotionMove = null;
     // this.initialise();
+    // ! Move all controller logic to the game manager
     document
       .getElementById("flipBtn")
       .addEventListener("click", this.flip.bind(this));
@@ -117,7 +118,7 @@ class ChessBoard {
     this.display = document.createElement("div");
     this.display.id = "chessboard";
     parent.appendChild(this.display);
-
+    this.clearMoveHistory();
     // this.initialise();
   }
   clear() {
@@ -349,7 +350,7 @@ class ChessBoard {
     this.setPosition(position);
   }
   setStatus(status) {
-    console.trace("🚀 ~ ChessBoard ~ setStatus ~ status:", status);
+    // console.trace("🚀 ~ ChessBoard ~ setStatus ~ status:", status);
     document.getElementById("status").textContent = status;
   }
   clearStatus() {
@@ -362,7 +363,7 @@ class ChessBoard {
     document.getElementById(`${color}-timer`).textContent = time;
   }
   updateMoveHistory(move) {
-    console.log("🚀 ~ ChessBoard ~ updateMoveHistory ~ move:", move);
+    // console.log("🚀 ~ ChessBoard ~ updateMoveHistory ~ move:", move);
     let moveElement = this.history.querySelector(`#move-${move.number}`);
     if (!moveElement) {
       moveElement = document.createElement("div");
@@ -388,15 +389,18 @@ class ChessBoard {
       const whiteMove = moveElement.querySelector(".white-move");
       whiteMove.textContent = move.san;
       whiteMove.addEventListener("click", () => {
-        console.log("move - white", move);
+        // console.log("move - white", move);
       });
     } else {
       const blackMove = moveElement.querySelector(".black-move");
       blackMove.textContent = move.san;
       blackMove.addEventListener("click", () => {
-        console.log("move - black", move);
+        // console.log("move - black", move);
       });
     }
+  }
+  clearMoveHistory() {
+    this.history.innerHTML = "";
   }
 }
 

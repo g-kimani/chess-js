@@ -1,7 +1,7 @@
 import EventHandler from "./EventHandler.js";
 import Chess from "./chess.js";
 import ChessBoard from "./chessboard.js";
-import { enemyBankRank } from "./helpers.js";
+import { enemyBackRank, positionToSAN } from "./helpers.js";
 
 class CountdownTimer {
   constructor(timeInMinutes) {
@@ -34,6 +34,10 @@ class CountdownTimer {
     this.time = 0;
     this.events.trigger("reset", this.string());
   }
+  setTime(timeInMinutes) {
+    this.time = timeInMinutes * 60;
+    this.events.trigger("set", this.string());
+  }
   string() {
     let seconds = this.time % 60;
     let minutes = Math.floor(this.time / 60);
@@ -61,11 +65,44 @@ class GameManger {
     this.display.start();
     this.selectedSquare = null;
     this.legalMoves = [];
-    this.currentPlayer = "w";
+    this.toMove = "w";
     this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
+    this.settings = {
+      time: 5,
+      persistLastMove: true,
+    };
     this.eventListeners();
   }
   eventListeners() {
+    /** settings */
+    const timeInput = document.getElementById("time");
+    timeInput.addEventListener("change", (e) => {
+      this.settings.time = e.target.value;
+    });
+    // const persistInput = document.getElementById("persist");
+    // persistInput.addEventListener("change", (e) => {
+    //   this.settings.persistLastMove = e.target.checked;
+    // });
+    document.getElementById("fenBtn").addEventListener("click", () => {
+      const fen = this.game.fen();
+      //console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
+      document.getElementById("fen").value = fen;
+    });
+
+    /** Players */
+    this.players.forEach((player) => {
+      player.timer.events.on("tick", (time) => {
+        this.display.updateTimer(player.color, time);
+      });
+      player.timer.events.on("timeout", () => {
+        // ! need to implement
+        this.game.resign(player.color);
+      });
+      player.timer.events.on("set", (time) => {
+        this.display.updateTimer(player.color, time);
+      });
+    });
+
     /** display (ChessBoard Class) */
     this.display.events.on("start", this.start.bind(this));
     this.display.events.on("click", (square) => this.handleClick(square));
@@ -112,6 +149,10 @@ class GameManger {
     // this.game.load(fenInput);
     this.display.start(fenInput);
     this.game.start(fenInput);
+    this.display.updateTurn(this.game.turn());
+    this.players.forEach((player) => {
+      player.timer.setTime(this.settings.time);
+    });
   }
   stop() {
     this.game.stop();
@@ -121,13 +162,6 @@ class GameManger {
   }
   startPlayerTimer(color) {
     const player = this.getPlayer(color);
-    player.timer.events.on("tick", (time) => {
-      this.display.updateTimer(color, time);
-    });
-    player.timer.events.on("timeout", () => {
-      // ! need to implement
-      this.game.resign(color);
-    });
     player.timer.start();
   }
   stopPlayerTimer(color) {
@@ -164,7 +198,7 @@ class GameManger {
     if (
       piece &&
       piece.type === "pawn" &&
-      square[0] === enemyBankRank(piece.color)
+      square[0] === enemyBackRank(piece.color)
     ) {
       //console.log("game");
       this.display.showPromotionSelection(
@@ -182,7 +216,11 @@ class GameManger {
   }
   handlePromotion(type, move) {
     //console.log("🚀 ~ GameManger ~ handlePromotion ~ type, move):", type, move);
-    this.game.promote(type, move);
+    // this.game.promote(type, move);
+    this.game.move([move.from.row, move.from.col], [move.to.row, move.to.col], {
+      promotion: type,
+      validate: true,
+    });
   }
   handleMove(move) {
     //console.log("handleMove", move);
@@ -265,7 +303,7 @@ class GameManger {
       san += "x";
     }
 
-    san += squareMap[to.row * 8 + to.col];
+    san += positionToSAN(to.row, to.col);
 
     if (promotion) {
       console.log("🚀 ~ GameManger ~ convertMoveToSAN ~ promotion:", promotion);

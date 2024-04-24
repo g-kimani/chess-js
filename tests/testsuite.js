@@ -2,7 +2,7 @@ class TestSuite {
   constructor() {
     this.tests = [];
   }
-  testGroup(name, tests, disabled = false) {
+  testGroup(name, disabled = false, tests) {
     console.group(name);
     if (disabled) {
       console.log("Tests disabled");
@@ -10,12 +10,14 @@ class TestSuite {
       return;
     }
     const passed = this.runTests(tests);
+
     console.log(
       `${passed === tests.length ? "👌" : "❌"} ${name}  |  ${passed}/${
         tests.length
       } passed`
     );
     console.groupEnd();
+    return passed;
   }
   makeTest(name, expected, fn) {
     const test = {
@@ -42,11 +44,15 @@ class TestSuite {
         const start = performance.now();
         test.run();
         const end = performance.now();
-        //console.log(`✅ ${test.name} | ${(end - start).toFixed(2)}ms`);
+        console.log(`✅ ${test.name} | ${(end - start).toFixed(2)}ms`);
+
         passedNum++;
       } catch (e) {
-        //console.log(`❌ ${test.name} | ${e.message}`);
+        console.log(`❌ ${test.name} | ${e.message}`);
       }
+      // const start = performance.now();
+      // test.run();
+      // const end = performance.now();
     });
     return passedNum;
   }

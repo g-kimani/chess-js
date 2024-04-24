@@ -73,8 +73,18 @@ function inBounds(row, col) {
   return row >= 0 && row < 8 && col >= 0 && col < 8;
 }
 
-function enemyBankRank(color) {
+function enemyBackRank(color) {
   return color === "w" ? 0 : 7;
+}
+
+function positionToSAN(row, col) {
+  return String.fromCharCode(97 + col) + (8 - row);
+}
+
+function positionFromSAN(san) {
+  const col = san.charCodeAt(0) - 97;
+  const row = 8 - parseInt(san[1]);
+  return { row, col };
 }
 
 export {
@@ -82,6 +92,8 @@ export {
   isValidFen,
   indexToRowCol,
   inBounds,
-  enemyBankRank,
+  enemyBackRank,
   posToIndex,
+  positionToSAN,
+  positionFromSAN,
 };
