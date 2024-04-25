@@ -5,7 +5,7 @@ import ChessBoard from "../chessboard.js";
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-tests.testGroup("Chess Class", 0, [
+tests.testGroup("Chess Class", 1, [
   tests.makeTest("Chess initialises the board with 64 squares", 64, () => {
     const chess = new Chess();
     return chess.board.flat().length;

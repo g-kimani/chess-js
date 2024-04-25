@@ -148,7 +148,7 @@ tests.testGroup("ChessBoard", 1, [
   tests.makeTest("Chessboard sets a status", "Test status", () => {
     const chessboard = new ChessBoard();
     chessboard.initialise();
-    chessboard.setStatus("Test status");
+    chessboard.updateStatus("Test status");
     return chessboard.status.textContent;
   }),
 
@@ -156,7 +156,7 @@ tests.testGroup("ChessBoard", 1, [
   tests.makeTest("Chessboard clears a status", "", () => {
     const chessboard = new ChessBoard();
     chessboard.initialise();
-    chessboard.setStatus("Test status");
+    chessboard.updateStatus("Test status");
     chessboard.clearStatus();
     return chessboard.status.textContent;
   }),

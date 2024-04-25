@@ -1,5 +1,4 @@
 import { Pawn, Rook, Knight, Bishop, Queen, King } from "./pieces.js";
-import EventHandler from "./EventHandler.js";
 import {
   normaliseFen,
   isValidFen,
@@ -7,6 +6,7 @@ import {
   positionToSAN,
   positionFromSAN,
   isUpperCase,
+  EventHandler,
 } from "./helpers.js";
 
 /**

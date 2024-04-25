@@ -91,6 +91,84 @@ function isUpperCase(str) {
   return str === str.toUpperCase();
 }
 
+class CountdownTimer {
+  constructor(timeInMinutes) {
+    this.time = timeInMinutes * 60;
+    this.interval = null;
+    this.running = false;
+    this.events = new EventHandler();
+  }
+  start() {
+    if (this.running) {
+      return;
+    }
+    this.interval = setInterval(() => {
+      this.time--;
+      this.events.trigger("tick", this.string());
+      if (this.time === 0) {
+        this.events.trigger("timeout", this.string());
+        this.stop();
+      }
+    }, 1000);
+    this.running = true;
+  }
+  stop() {
+    clearInterval(this.interval);
+    this.running = false;
+    this.interval = null;
+    this.events.trigger("stop", this.string());
+  }
+  reset() {
+    this.time = 0;
+    this.events.trigger("reset", this.string());
+  }
+  setTime(timeInMinutes) {
+    this.time = timeInMinutes * 60;
+    this.events.trigger("set", this.string());
+  }
+  string() {
+    let seconds = this.time % 60;
+    let minutes = Math.floor(this.time / 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+      2,
+      "0"
+    )}`;
+  }
+}
+
+class Player {
+  constructor(name, color) {
+    this.name = name;
+    this.color = color;
+    this.timer = new CountdownTimer(5);
+  }
+}
+
+class EventHandler {
+  constructor() {
+    this.events = {};
+  }
+
+  on(event, callback) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(callback);
+  }
+
+  off(event, callback) {
+    if (this.events[event]) {
+      this.events[event] = this.events[event].filter((cb) => cb !== callback);
+    }
+  }
+
+  trigger(event, ...args) {
+    if (this.events[event]) {
+      this.events[event].forEach((cb) => cb(...args));
+    }
+  }
+}
+
 export {
   normaliseFen,
   isValidFen,
@@ -101,4 +179,6 @@ export {
   positionToSAN,
   positionFromSAN,
   isUpperCase,
+  Player,
+  EventHandler,
 };

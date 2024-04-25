@@ -1,76 +1,24 @@
-import EventHandler from "./EventHandler.js";
 import Chess from "./chess.js";
 import ChessBoard from "./chessboard.js";
-import { enemyBackRank, positionToSAN } from "./helpers.js";
-
-class CountdownTimer {
-  constructor(timeInMinutes) {
-    this.time = timeInMinutes * 60;
-    this.interval = null;
-    this.running = false;
-    this.events = new EventHandler();
-  }
-  start() {
-    if (this.running) {
-      return;
-    }
-    this.interval = setInterval(() => {
-      this.time--;
-      this.events.trigger("tick", this.string());
-      if (this.time === 0) {
-        this.events.trigger("timeout", this.string());
-        this.stop();
-      }
-    }, 1000);
-    this.running = true;
-  }
-  stop() {
-    clearInterval(this.interval);
-    this.running = false;
-    this.interval = null;
-    this.events.trigger("stop", this.string());
-  }
-  reset() {
-    this.time = 0;
-    this.events.trigger("reset", this.string());
-  }
-  setTime(timeInMinutes) {
-    this.time = timeInMinutes * 60;
-    this.events.trigger("set", this.string());
-  }
-  string() {
-    let seconds = this.time % 60;
-    let minutes = Math.floor(this.time / 60);
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
-      2,
-      "0"
-    )}`;
-  }
-}
-
-class Player {
-  constructor(name, color) {
-    this.name = name;
-    this.color = color;
-    this.timer = new CountdownTimer(5);
-  }
-}
+import { enemyBackRank, positionToSAN, Player } from "./helpers.js";
 
 class GameManger {
   constructor() {
     this.game = new Chess();
-    this.game.start();
     this.display = new ChessBoard();
-    this.display.initialise();
-    this.display.start();
-    this.selectedSquare = null;
-    this.legalMoves = [];
-    this.toMove = "w";
     this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.settings = {
       time: 5,
       persistLastMove: true,
     };
+
+    this.selectedSquare = null;
+    this.legalMoves = [];
+    this.toMove = "w";
+
+    // without this, the game will not start and the board will not be interactive
+    // this.game.start();
+    this.display.start();
     this.eventListeners();
   }
   eventListeners() {
@@ -88,53 +36,63 @@ class GameManger {
       //console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
       document.getElementById("fen").value = fen;
     });
+    document.getElementById("startBtn").addEventListener("click", () => {
+      this.start();
+    });
+    document.getElementById("flipBtn").addEventListener("click", () => {
+      this.display.flip();
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      this.display.clear();
+      this.reset();
+    });
 
     /** Players */
     this.players.forEach((player) => {
       player.timer.events.on("tick", (time) => {
-        this.display.updateTimer(player.color, time);
+        this.updateTimer(player.color, time);
       });
       player.timer.events.on("timeout", () => {
         // ! need to implement
         this.game.resign(player.color);
       });
       player.timer.events.on("set", (time) => {
-        this.display.updateTimer(player.color, time);
+        this.updateTimer(player.color, time);
       });
     });
 
     /** display (ChessBoard Class) */
-    this.display.events.on("start", this.start.bind(this));
+    // this.display.events.on("start", this.start.bind(this));
     this.display.events.on("click", (square) => this.handleClick(square));
     this.display.events.on("promotion", this.handlePromotion.bind(this));
-    this.display.events.on("clear", this.reset.bind(this));
+    // this.display.events.on("clear", this.reset.bind(this));
 
     /** game (Chess Class) */
 
     this.game.events.on("start", () => {
       console.log(this.game.string());
-      this.display.updateTurn(this.game.turn());
+      this.updateTurn(this.game.turn());
       this.startPlayerTimer(this.game.turn());
     });
     this.game.events.on("moved", (move) => {
       //console.log("Moved", move);
       console.log(this.game.string());
       this.handleMove(move);
-      this.display.updateTurn(this.game.turn());
+      this.updateTurn(this.game.turn());
       this.stopPlayerTimer(move.piece.color);
       this.startPlayerTimer(this.game.turn());
     });
     this.game.events.on("check", (color) => {
       //console.log("Check", color);
-      this.display.setStatus(`Check: ${color}`);
+      this.updateStatus(`Check: ${color}`);
     });
     this.game.events.on("checkmate", (color) => {
       //console.log("Checkmate", color);
-      this.display.setStatus(`Checkmate: ${color}`);
+      this.updateStatus(`Checkmate: ${color}`);
     });
     this.game.events.on("stalemate", () => {
       //console.log("Stalemate");
-      this.display.setStatus("Stalemate");
+      this.updateStatus("Stalemate");
     });
     this.game.events.on("insufficient", () => {
       //console.log("Insufficient");
@@ -145,11 +103,12 @@ class GameManger {
     const fenInput = document.getElementById("fen").value;
     //console.log("🚀 ~ GameManger ~ start ~ fenInput:", fenInput);
     // this.loadFen(fenInput);
+    this.clearMoveHistory();
     this.display.clear();
     // this.game.load(fenInput);
     this.display.start(fenInput);
     this.game.start(fenInput);
-    this.display.updateTurn(this.game.turn());
+    this.updateTurn(this.game.turn());
     this.players.forEach((player) => {
       player.timer.setTime(this.settings.time);
     });
@@ -248,7 +207,7 @@ class GameManger {
     this.legalMoves = [];
     this.display.clearHighlights();
     move.san = this.convertMoveToSAN(move);
-    this.display.updateMoveHistory(move);
+    this.updateMoveHistory(move);
     // this.display.setStatus("");
   }
   selectSquare(square) {
@@ -356,6 +315,74 @@ class GameManger {
 
     const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
     return files[from.col];
+  }
+  /**
+   * Updates the status of the board
+   * @param {string} status - the status to set
+   */
+  updateStatus(status) {
+    document.getElementById("status").textContent = status;
+  }
+
+  /**
+   * Clears the status of the board
+   */
+  clearStatus() {
+    document.getElementById("status").textContent = "";
+  }
+
+  /**
+   * Updates the turn indicator on the board
+   * @param {string} turn - The current turn
+   */
+  updateTurn(turn) {
+    document.getElementById("turn").textContent = turn;
+  }
+
+  updateTimer(color, time) {
+    document.getElementById(`${color}-timer`).textContent = time;
+  }
+
+  updateMoveHistory(move) {
+    let moveElement = document
+      .getElementById("history")
+      .querySelector(`#move-${move.number}`);
+    if (!moveElement) {
+      moveElement = document.createElement("div");
+      moveElement.id = `move-${move.number}`;
+
+      const moveNumber = document.createElement("span");
+      moveNumber.classList.add("move-number");
+      moveElement.appendChild(moveNumber);
+
+      const whiteMove = document.createElement("span");
+      whiteMove.classList.add("white-move");
+      moveElement.appendChild(whiteMove);
+
+      const blackMove = document.createElement("span");
+      blackMove.classList.add("black-move");
+      moveElement.appendChild(blackMove);
+
+      document.getElementById("history").appendChild(moveElement);
+    }
+    const moveNumber = moveElement.querySelector(".move-number");
+    moveNumber.textContent = `${move.number}.`;
+    if (move.piece.color === "w") {
+      const whiteMove = moveElement.querySelector(".white-move");
+      whiteMove.textContent = move.san;
+      whiteMove.addEventListener("click", () => {
+        // console.log("move - white", move);
+      });
+    } else {
+      const blackMove = moveElement.querySelector(".black-move");
+      blackMove.textContent = move.san;
+      blackMove.addEventListener("click", () => {
+        // console.log("move - black", move);
+      });
+    }
+  }
+  clearMoveHistory() {
+    document.getElementById("history").innerHTML = "";
   }
 }
 
