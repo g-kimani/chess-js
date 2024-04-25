@@ -2,6 +2,9 @@ import Chess from "./chess.js";
 import ChessBoard from "./chessboard.js";
 import { enemyBackRank, positionToSAN, Player } from "./helpers.js";
 
+const STARTING_POSITION =
+  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
 class GameManger {
   constructor() {
     this.game = new Chess();
@@ -17,11 +20,13 @@ class GameManger {
     this.toMove = "w";
 
     // without this, the game will not start and the board will not be interactive
-    // this.game.start();
     this.display.start();
-    this.eventListeners();
+    this._eventListeners();
   }
-  eventListeners() {
+  /**
+   * Adds event listeners to the game
+   */
+  _eventListeners() {
     /** settings */
     const timeInput = document.getElementById("time");
     timeInput.addEventListener("change", (e) => {
@@ -33,7 +38,6 @@ class GameManger {
     // });
     document.getElementById("fenBtn").addEventListener("click", () => {
       const fen = this.game.fen();
-      //console.log("🚀 ~ Chess ~ constructor ~ fen", fen);
       document.getElementById("fen").value = fen;
     });
     document.getElementById("startBtn").addEventListener("click", () => {
@@ -62,82 +66,93 @@ class GameManger {
     });
 
     /** display (ChessBoard Class) */
-    // this.display.events.on("start", this.start.bind(this));
-    this.display.events.on("click", (square) => this.handleClick(square));
-    this.display.events.on("promotion", this.handlePromotion.bind(this));
-    // this.display.events.on("clear", this.reset.bind(this));
+    this.display.events.on("click", (square) => this._handleClick(square));
+    this.display.events.on("promotion", this._handlePromotion.bind(this));
 
     /** game (Chess Class) */
-
     this.game.events.on("start", () => {
-      console.log(this.game.string());
       this.updateTurn(this.game.turn());
       this.startPlayerTimer(this.game.turn());
     });
+
     this.game.events.on("moved", (move) => {
-      //console.log("Moved", move);
       console.log(this.game.string());
-      this.handleMove(move);
+      this._handleMove(move);
       this.updateTurn(this.game.turn());
+      // switch player timers
       this.stopPlayerTimer(move.piece.color);
       this.startPlayerTimer(this.game.turn());
     });
     this.game.events.on("check", (color) => {
-      //console.log("Check", color);
       this.updateStatus(`Check: ${color}`);
     });
     this.game.events.on("checkmate", (color) => {
-      //console.log("Checkmate", color);
       this.updateStatus(`Checkmate: ${color}`);
     });
     this.game.events.on("stalemate", () => {
-      //console.log("Stalemate");
       this.updateStatus("Stalemate");
     });
     this.game.events.on("insufficient", () => {
-      //console.log("Insufficient");
+      this.updateStatus("Insufficient material");
     });
   }
+
+  /**
+   * Starts the game with the given FEN string
+   */
   start() {
-    //console.log("start");
     const fenInput = document.getElementById("fen").value;
-    //console.log("🚀 ~ GameManger ~ start ~ fenInput:", fenInput);
-    // this.loadFen(fenInput);
     this.clearMoveHistory();
-    this.display.clear();
-    // this.game.load(fenInput);
     this.display.start(fenInput);
     this.game.start(fenInput);
-    this.updateTurn(this.game.turn());
     this.players.forEach((player) => {
       player.timer.setTime(this.settings.time);
     });
   }
-  stop() {
-    this.game.stop();
-  }
+
+  /**
+   * Resets the game to the starting position
+   */
   reset() {
     this.game.reset();
+    this.game.load(STARTING_POSITION);
+    this.display.start(STARTING_POSITION);
   }
+
+  /**
+   * Starts the timer for the given player
+   * @param {color} color - the color of the player
+   */
   startPlayerTimer(color) {
     const player = this.getPlayer(color);
     player.timer.start();
   }
+
+  /**
+   * Stops the timer for the given player
+   * @param {color} color - the color of the player
+   */
   stopPlayerTimer(color) {
     const player = this.getPlayer(color);
     player.timer.stop();
   }
-  getPlayer(turn) {
-    return this.players.find((player) => player.color === turn);
+
+  /**
+   * Gets the player object for the given color
+   * @param {color} color - the color of the player
+   * @returns {Player} - the player object
+   */
+  getPlayer(color) {
+    return this.players.find((player) => player.color === color);
   }
-  handleClick(square) {
-    // no square selected
-    // console.log(
-    //   "🚀 ~ GameManger ~ handleClick ~ this.selectedSquare:",
-    //   this.selectedSquare
-    // );
+
+  /**
+   * Handles a click on the board by a player. If a square is already selected, it will attempt to move the piece to the clicked square. If no square is selected, it will select the clicked square.
+   * @param {square} square - the square that was clicked
+   */
+  _handleClick(square) {
     if (!this.selectedSquare) {
-      this.selectSquare(square);
+      this._selectSquare(square);
       return;
     }
 
@@ -147,19 +162,17 @@ class GameManger {
 
     // if square is not a legal move, select the square
     if (!isLegalMove) {
-      this.selectSquare(square);
+      this._selectSquare(square);
       return;
     }
 
     // get promotion selection if pawn moving to back rank
     const piece = this.game.getSquare(this.selectedSquare);
-    //console.log("🚀 ~ GameManger ~ handleClick ~ piece:", piece);
     if (
       piece &&
       piece.type === "pawn" &&
       square[0] === enemyBackRank(piece.color)
     ) {
-      //console.log("game");
       this.display.showPromotionSelection(
         {
           from: { row: this.selectedSquare[0], col: this.selectedSquare[1] },
@@ -169,25 +182,29 @@ class GameManger {
       );
       return;
     }
-    //console.log("pan");
     // move the piece
     this.game.move(this.selectedSquare, square);
   }
-  handlePromotion(type, move) {
-    //console.log("🚀 ~ GameManger ~ handlePromotion ~ type, move):", type, move);
-    // this.game.promote(type, move);
+
+  /**
+   * Handles a promotion event
+   * @param {string} type - the type of piece to promote to
+   * @param {Move} move - the move to make
+   */
+  _handlePromotion(type, move) {
     this.game.move([move.from.row, move.from.col], [move.to.row, move.to.col], {
       promotion: type,
       validate: true,
     });
   }
-  handleMove(move) {
-    //console.log("handleMove", move);
 
+  /**
+   * Handles a move event
+   * @param {Move} move - the move to make
+   */
+  _handleMove(move) {
     const { from, to, piece, captured, castled, promotion } = move;
-    console.log("🚀 ~ GameManger ~ handleMove ~ move:", move);
     if (captured) {
-      console.log("🚀 ~ GameManger ~ handleMove ~ captured:", captured);
       this.display.removePiece({
         row: captured.position[0],
         col: captured.position[1],
@@ -199,7 +216,6 @@ class GameManger {
     if (promotion) {
       this.display.removePiece(from);
       this.display.setPiece(to, piece);
-      //console.log("🚀 ~ GameManger ~ handleMove ~ to, piece:", to, piece);
     } else {
       this.display.movePiece(from, to);
     }
@@ -208,16 +224,16 @@ class GameManger {
     this.display.clearHighlights();
     move.san = this.convertMoveToSAN(move);
     this.updateMoveHistory(move);
-    // this.display.setStatus("");
   }
-  selectSquare(square) {
-    // console.debug("selectSquare", square);
+
+  /**
+   * Selects a square on the board. If the square contains a piece of the current player's color, it will highlight the square and show the available moves. If the square does not contain a piece of the current player's color, it will clear the selected square and available moves.
+   * @param {square} square - the square to select
+   */
+  _selectSquare(square) {
     this.selectedSquare = null;
     this.display.clearHighlights();
-    //console.log(this.game.string());
     const piece = this.game.getSquare(square);
-    //console.log("🚀 ~ GameManger ~ selectSquare ~ piece:", piece);
-    // //console.log("🚀 ~ GameManger ~ selectSquare ~ piece:", piece);
     if (piece && piece.color === this.game.turn()) {
       // highlight the selected square
       this.display.highlightSquares([square], "selected");
@@ -228,20 +244,16 @@ class GameManger {
       this.display.highlightSquares(moves, "move");
     }
   }
+
+  /**
+   * Converts a move object to SAN format
+   * @param {Move} move - the move to convert to SAN
+   * @returns {string} - the move in SAN format
+   */
   convertMoveToSAN(move) {
     const { from, to, piece, captured, castled, promotion, check, checkmate } =
       move;
-    // prettier-ignore
-    const squareMap = {
-       0: "a8",  1: "b8",  2: "c8",  3: "d8",  4: "e8",  5: "f8",  6: "g8",  7: "h8",
-       8: "a7",  9: "b7", 10: "c7", 11: "d7", 12: "e7", 13: "f7", 14: "g7", 15: "h7",
-      16: "a6", 17: "b6", 18: "c6", 19: "d6", 20: "e6", 21: "f6", 22: "g6", 23: "h6",
-      24: "a5", 25: "b5", 26: "c5", 27: "d5", 28: "e5", 29: "f5", 30: "g5", 31: "h5",
-      32: "a4", 33: "b4", 34: "c4", 35: "d4", 36: "e4", 37: "f4", 38: "g4", 39: "h4",
-      40: "a3", 41: "b3", 42: "c3", 43: "d3", 44: "e3", 45: "f3", 46: "g3", 47: "h3",
-      48: "a2", 49: "b2", 50: "c2", 51: "d2", 52: "e2", 53: "f2", 54: "g2", 55: "h2",
-      56: "a1", 57: "b1", 58: "c1", 59: "d1", 60: "e1", 61: "f1", 62: "g1", 63: "h1",
-    };
+
     let san = "";
     if (castled) {
       const { from } = castled;
@@ -278,6 +290,12 @@ class GameManger {
     }
     return san;
   }
+
+  /**
+   * Gets the disambiguation string for a move
+   * @param {Move} move - the move to disambiguate
+   * @returns {string} - the disambiguation string
+   */
   getDisambiguation(move) {
     const { from, to, piece, before } = move;
     // ! I will need to think about a more efficient way to do this
@@ -306,8 +324,6 @@ class GameManger {
     // if more than one piece can move to the target square, disambiguate
     const sameRank = piecesMoves.filter((p) => p[0] === from.row);
     const sameFile = piecesMoves.filter((p) => p[1] === from.col);
-    console.log("🚀 ~ GameManger ~ getDisambiguation ~ sameFile:", sameFile);
-    console.log("🚀 ~ GameManger ~ getDisambiguation ~ sameRank:", sameRank);
 
     if (sameFile.length > 1) {
       return 8 - from.row;
@@ -316,6 +332,7 @@ class GameManger {
     const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
     return files[from.col];
   }
+
   /**
    * Updates the status of the board
    * @param {string} status - the status to set
@@ -339,10 +356,19 @@ class GameManger {
     document.getElementById("turn").textContent = turn;
   }
 
+  /**
+   * Updates the timer for the given player
+   * @param {color} color - the color of the player
+   * @param {string} time - the time to set
+   */
   updateTimer(color, time) {
     document.getElementById(`${color}-timer`).textContent = time;
   }
 
+  /**
+   * Updates the move history with the given move
+   * @param {Move} move - the move to update the move history with
+   */
   updateMoveHistory(move) {
     let moveElement = document
       .getElementById("history")
@@ -381,11 +407,17 @@ class GameManger {
       });
     }
   }
+
+  /**
+   * Clears the move history
+   */
   clearMoveHistory() {
     document.getElementById("history").innerHTML = "";
   }
 }
 
-const game = new GameManger();
+window.onload = () => {
+  const game = new GameManger();
+};
 
 export default GameManger;
