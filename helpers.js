@@ -87,6 +87,10 @@ function positionFromSAN(san) {
   return { row, col };
 }
 
+function isUpperCase(str) {
+  return str === str.toUpperCase();
+}
+
 export {
   normaliseFen,
   isValidFen,
@@ -96,4 +100,5 @@ export {
   posToIndex,
   positionToSAN,
   positionFromSAN,
+  isUpperCase,
 };

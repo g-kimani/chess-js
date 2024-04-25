@@ -6,6 +6,7 @@ import {
   inBounds,
   positionToSAN,
   positionFromSAN,
+  isUpperCase,
 } from "./helpers.js";
 
 /**
@@ -609,18 +610,37 @@ class Chess {
     return false;
   }
 
+  /**
+   * Check if a piece can move to a square
+   * @param {square} from - The square to move from
+   * @param {square} to - The square to move to
+   * @param {board} board - The board to check
+   * @returns {boolean} - Whether the piece can move to the square
+   */
   pieceCanMove(from, to, board = this.board) {
     const pieceMoves = this.getLegalMoves(from, board, true);
     return pieceMoves.some((move) => move[0] === to[0] && move[1] === to[1]);
   }
 
+  /**
+   * Get the king piece of the given color
+   * @param {color} color - The color of the king
+   * @param {board} board - The board to check
+   * @returns {Piece} - The king piece
+   */
   getKing(color, board = this.board) {
     return board
       .flat()
       .find((piece) => piece && piece.type === "king" && piece.color === color);
   }
 
-  inCheck(color, board = this.board) {
+  /**
+   * Check if the king is in check
+   * @param {color} color - The color of the king. Default is the player to move
+   * @param {board} board - The board to check
+   * @returns {boolean} - Whether the king is in check
+   */
+  inCheck(color = this.toMove, board = this.board) {
     const king = this.getKing(color, board);
     return this.isSquareAttacked(
       this.oppositeColor(color),
@@ -629,6 +649,11 @@ class Chess {
     );
   }
 
+  /**
+   * Check if the king is in checkmate
+   * @param {color} color - The color of the king
+   * @returns {boolean} - Whether the king is in checkmate
+   */
   isCheckmate(color) {
     // check if the king is in check
     if (!this.inCheck(color)) {
@@ -652,25 +677,38 @@ class Chess {
     return true;
   }
 
+  /**
+   * Check if the game is in stalemate
+   * @param {color} color - The color of the player
+   * @returns {boolean} - Whether the game is in stalemate
+   */
   isStalemate(color) {
-    // ! NEED TO CHECK THAT ALL OTHER PIECES CANNOT MOVE
     if (this.inCheck(color)) {
       return false;
     }
+
     if (this.getLegalMoves(this.getKing(color).position).length > 0) {
       return false;
     }
+
     const pieces = this.board
       .flat()
       .filter((piece) => piece && piece.color === color);
+
     for (let piece of pieces) {
       const moves = this.getLegalMoves(piece.position);
       if (moves.length > 0) {
         return false;
       }
     }
+
     return true;
   }
+
+  /**
+   * Returns a copy of the board
+   * @returns {Array<Array<Piece|null>>} - The board
+   */
   copyBoard() {
     return this.board.map((row) => {
       return row.map((piece) => {
@@ -678,6 +716,11 @@ class Chess {
       });
     });
   }
+
+  /**
+   * Get the string representation of the board
+   * @returns {string} - The string representation of the board
+   */
   string() {
     let board = "    a  b  c  d  e  f  g  h\n";
     board += "  +------------------------+\n";
@@ -698,6 +741,13 @@ class Chess {
   }
 
   /* PIECE MOVEMENT */
+
+  /**
+   * Check if a piece can move from one square to another
+   * @param {square} from - The square to move from
+   * @param {square} to - The square to move to
+   * @returns {boolean} - Whether the piece can move from the square to the other square
+   */
   canMove(from, to) {
     const piece = this.getSquare(from);
     if (!piece) {
@@ -707,7 +757,13 @@ class Chess {
     return moves.some((move) => move[0] === to[0] && move[1] === to[1]);
   }
 
-  // ! Could be moved to a separate class
+  /**
+   * Get the legal moves for a piece on the board
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @param {boolean} pseudo - Whether to get pseudo legal moves
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   getLegalMoves(square, board = this.board, pseudo = false) {
     const [row, col] = square;
     const piece = board[row][col];
@@ -737,7 +793,6 @@ class Chess {
       default:
         break;
     }
-    // no need to check for check if we're just generating moves
     if (pseudo) {
       return moves;
     }
@@ -756,13 +811,19 @@ class Chess {
       return true;
     });
   }
+
+  /**
+   * Generate the legal moves for a pawn
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generatePawnMoves(square, board) {
-    // //console.log("🚀 ~ Chess ~ generatePawnMoves ~ board:", board);
+    const moves = [];
     const [row, col] = square;
     const pawn = board[row][col];
-    const moves = [];
     const direction = pawn.color === "w" ? -1 : 1;
-    // //console.log(board[row + direction], row, direction);
+
     if (board[row + direction][col] === null) {
       moves.push([row + direction, col]);
       if (
@@ -773,13 +834,14 @@ class Chess {
         moves.push([row + 2 * direction, col]);
       }
     }
-    let target = board[row + direction][col - 1];
-    if (col > 0 && target !== null && target.color !== pawn.color) {
-      moves.push([row + direction, col - 1]);
-    }
-    target = board[row + direction][col + 1];
-    if (col < 7 && target !== null && target.color !== pawn.color) {
-      moves.push([row + direction, col + 1]);
+
+    for (let colOffset of [-1, 1]) {
+      const target = board[row + direction][col + colOffset];
+      if (col + colOffset >= 0 && col + colOffset < 8) {
+        if (target !== null && target.color !== pawn.color) {
+          moves.push([row + direction, col + colOffset]);
+        }
+      }
     }
 
     // en passant
@@ -795,10 +857,18 @@ class Chess {
 
     return moves;
   }
+
+  /**
+   * Generate the legal moves for a rook
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generateRookMoves(square, board) {
+    const moves = [];
     const [row, col] = square;
     const rook = board[row][col];
-    const moves = [];
+
     const directions = [
       [0, 1],
       [0, -1],
@@ -807,12 +877,7 @@ class Chess {
     ];
     for (let [rowDir, colDir] of directions) {
       let [targetRow, targetCol] = [row + rowDir, col + colDir];
-      while (
-        targetRow >= 0 &&
-        targetRow < 8 &&
-        targetCol >= 0 &&
-        targetCol < 8
-      ) {
+      while (inBounds(targetRow, targetCol)) {
         if (board[targetRow][targetCol] === null) {
           moves.push([targetRow, targetCol]);
         } else {
@@ -827,6 +892,13 @@ class Chess {
     }
     return moves;
   }
+
+  /**
+   * Generate the legal moves for a knight
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generateKnightMoves(square, board) {
     const [row, col] = square;
     const knight = board[row][col];
@@ -843,7 +915,7 @@ class Chess {
     ];
     for (let [rowDir, colDir] of directions) {
       let [targetRow, targetCol] = [row + rowDir, col + colDir];
-      if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
+      if (inBounds(targetRow, targetCol)) {
         if (board[targetRow][targetCol] === null) {
           moves.push([targetRow, targetCol]);
         } else {
@@ -855,10 +927,18 @@ class Chess {
     }
     return moves;
   }
+
+  /**
+   * Generate the legal moves for a bishop
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generateBishopMoves(square, board) {
+    const moves = [];
     const [row, col] = square;
     const bishop = board[row][col];
-    const moves = [];
+
     const directions = [
       [1, 1],
       [1, -1],
@@ -867,12 +947,7 @@ class Chess {
     ];
     for (let [rowDir, colDir] of directions) {
       let [targetRow, targetCol] = [row + rowDir, col + colDir];
-      while (
-        targetRow >= 0 &&
-        targetRow < 8 &&
-        targetCol >= 0 &&
-        targetCol < 8
-      ) {
+      while (inBounds(targetRow, targetCol)) {
         if (board[targetRow][targetCol] === null) {
           moves.push([targetRow, targetCol]);
         } else {
@@ -887,12 +962,27 @@ class Chess {
     }
     return moves;
   }
+
+  /**
+   * Generate the legal moves for a queen
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generateQueenMoves(square, board) {
     return [
       ...this.generateBishopMoves(square, board),
       ...this.generateRookMoves(square, board),
     ];
   }
+
+  /**
+   * Generate the legal moves for a king
+   * @param {square} square - The square to get legal moves for
+   * @param {board} board - The board to get legal moves for
+   * @param {boolean} ignoreCastling - Whether to ignore castling
+   * @returns {Array<square>} - The legal moves for the piece
+   */
   generateKingMoves(square, board, ignoreCastling = false) {
     const [row, col] = square;
     const king = board[row][col];
@@ -903,12 +993,7 @@ class Chess {
         if (rowDir === 0 && colDir === 0) continue; // skip the king's position
 
         let [targetRow, targetCol] = [row + rowDir, col + colDir];
-        if (
-          targetRow >= 0 &&
-          targetRow < 8 &&
-          targetCol >= 0 &&
-          targetCol < 8
-        ) {
+        if (inBounds(targetRow, targetCol)) {
           const targetPiece = board[targetRow][targetCol];
           if (!targetPiece || targetPiece.color !== king.color) {
             moves.push([targetRow, targetCol]);
@@ -954,16 +1039,19 @@ class Chess {
 
     return moves;
   }
+
+  /**
+   * Get the locations of the pieces of a given type and color
+   * @param {string} type - The type of piece
+   * @param {color} color - The color of the piece
+   * @returns {Array<square>} - The locations of the pieces
+   */
   getPieceLocations(type, color) {
     const pieces = this.board.flat().filter((piece) => {
       return piece && piece.type === type && piece.color === color;
     });
     return pieces.map((piece) => piece.position);
   }
-}
-
-function isUpperCase(str) {
-  return str === str.toUpperCase();
 }
 
 export default Chess;
