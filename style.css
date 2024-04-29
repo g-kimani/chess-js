@@ -12,12 +12,13 @@
   margin: 0;
 }
 body {
-  text-align: center;
   display: grid;
   place-items: center;
-  /* justify-content: center; */
-  /* align-items: center; */
   background-color: #141414;
+}
+
+.relative {
+  position: relative;
 }
 
 .background-image {
@@ -29,15 +30,15 @@ body {
   z-index: -1;
   /* background-image: url("./assets/clear-board.png"); */
   background-size: cover;
-  background-position: 360px;
-  filter: blur(5px);
+  /* background-position: 360px; */
+  filter: blur(8px);
 }
 
 .game-container {
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  height: 100%;
+  height: auto;
   -webkit-user-select: none;
   user-select: none;
   flex-wrap: wrap;
@@ -65,7 +66,6 @@ body {
   display: grid;
   grid-template: repeat(8, 1fr) / repeat(8, 1fr);
   width: 650px;
-  /* height: 100%; */
 }
 
 .piece {
@@ -120,29 +120,39 @@ body {
 }
 .flex {
   display: flex;
-  /* justify-content: center; */
-  /* align-items: center; */
+  gap: 0.5rem;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 /* Controls */
 
 #controls {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  /* margin-top: 1rem; */
+  justify-content: space-between;
+
   flex-direction: column;
   background-color: #21201d;
   padding: 20px 10px;
-  /* margin: 5px; */
   border-radius: 10px;
-  /* height: 100%; */
   color: #fff;
+  max-width: 300px;
+  width: 280px;
 }
 
 #controls > div.game {
   display: flex;
   justify-content: space-between;
-  /* gap: 1rem; */
+}
+
+#new-game {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  height: 100%;
 }
 
 .hidden {
@@ -164,23 +174,21 @@ body {
   margin: 5px 0px;
 }
 
-.game-history {
+#game-history {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
-  /* max-height: 200px; */
   padding: 5px;
   border: 1px solid #fff;
   border-radius: 4px;
-  height: 100%;
+  height: auto;
 }
 
 .timer {
   display: flex;
   justify-content: center;
   align-items: center;
-  /* gap: 1rem; */
   font-size: 1.5rem;
   font-weight: bold;
   color: #fff;
@@ -259,6 +267,28 @@ body {
 .button:hover {
   background-color: #4b7399;
   /* font-size: 1.05rem; */
+}
+
+.button:active {
+  transform: scale(0.95);
+}
+
+.button.large {
+  font-size: 1.5rem;
+  padding: 10px 20px;
+  width: 100%;
+  /* margin: 5px 0px; */
+}
+
+.full-height {
+  height: 100%;
+}
+.full-width {
+  width: 100%;
+}
+
+.flex-grow {
+  flex-grow: 1;
 }
 
 #history {

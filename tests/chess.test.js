@@ -1,7 +1,7 @@
 import tests from "./testsuite.js";
-import Chess from "../chess.js";
-import { indexToRowCol, normaliseFen } from "../helpers.js";
-import ChessBoard from "../chessboard.js";
+import Chess from "../js/chess.js";
+import { indexToRowCol, normaliseFen } from "../js/helpers.js";
+import ChessBoard from "../js/chessboard.js";
 const STARTING_POSITION =
   "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 

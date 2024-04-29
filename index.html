@@ -11,86 +11,98 @@
 <body class="roboto-mono-variable">
     <div class="background-image"></div>
     <div class="game-container">
-        <div style="position:relative;">
+        <div class="relative">
             <div id="chessboard"></div>
             <div id="promotion" class="hidden">
-                <button id="queen" class="promotion-btn">
-                    <img src="./assets/chess-pieces/wq.png" alt="Queen">
-                </button>
-                <button id="rook" class="promotion-btn">
-                    <img src="./assets/chess-pieces/wr.png" alt="Rook">
-                </button>
-                <button id="bishop" class="promotion-btn">
-                    <img src="./assets/chess-pieces/wb.png" alt="Bishop">
-                </button>
-                <button id="night" class="promotion-btn">
-                    <img src="./assets/chess-pieces/wn.png" alt="Knight">
-                </button>
-                <button class="close">Close</button>
             </div>
         </div>
         <div id="controls">
-            <h3>Turn: <span id="turn"></span></h3>
-            <div>
-                <div class="flex white-box">
-                    <div id="b-timer" class="timer">
-                        00:00
-                    </div>
-                    <div id="b-captures" class="captures">
-                        <div class="flex">
-                            <div id="b-captures-pawn" class="captures-piece"></div>
-                            <div id="b-captures-rook" class="captures-piece"></div>
-                            <div id="b-captures-knight" class="captures-piece"></div>
-                            <div id="b-captures-bishop" class="captures-piece"></div>
-                            <div id="b-captures-queen" class="captures-piece"></div>
-                        </div>
-                    </div>
+            <div id="new-game">
+                <div class="intro">
+                    <h1>Chess by <span class="subtitle">George</span></h1>
+                    <p>Play chess with a friend or against the computer. You can also setup a position and play from
+                        there.</p>
                 </div>
-                <div class="flex black-box">
-                    <div id="w-timer" class="timer">
-                        00:00
+                <div class="flex">
+                    <button id="new-game-btn" class="button flex-grow large full-height">New Game</button>
+                    <div class="flex-column">
+                        <label for="time-control">Time Control:</label>
+                        <select id="time-control" class="full-width">
+                            <option value="1">🔫 1 min</option>
+                            <option value="3">⚡ 3 min</option>
+                            <option value="10" selected>⏱️ 10 min</option>
+                            <option value="30">🔎 30 min</option>
+                        </select>
                     </div>
-                    <div id="w-captures" class="captures">
-                        <div class="flex">
-                            <div id="w-captures-pawn" class="captures-piece"></div>
-                            <div id="w-captures-rook" class="captures-piece"></div>
-                            <div id="w-captures-knight" class="captures-piece"></div>
-                            <div id="w-captures-bishop" class="captures-piece"></div>
-                            <div id="w-captures-queen" class="captures-piece"></div>
-                        </div>
-                    </div>
+
+                </div>
+                <div>
+                    <label for="player1">Player 1:</label><input id="player1" type="text" value="Player 1"><br>
+                    <label for="player2">Player 2:</label><input id="player2" type="text" value="Player 2">
+                </div>
+                <div class="flex-column">
+                    <button id="previousGames" class="button large">Previous Games</button>
+                    <button id="setupPosition" class="button large">Setup Position</button>
                 </div>
             </div>
-            <div class="game-history">
-                <h2>Game History</h2>
-                <div id="history">
+
+            <div id="game-controls" class="hidden">
+
+                <h3>Turn: <span id="turn"></span></h3>
+                <div>
+                    <div class="flex white-box">
+                        <div id="b-timer" class="timer">
+                            00:00
+                        </div>
+                        <div id="b-captures" class="captures">
+                            <div class="flex">
+                                <div id="b-captures-pawn" class="captures-piece"></div>
+                                <div id="b-captures-rook" class="captures-piece"></div>
+                                <div id="b-captures-knight" class="captures-piece"></div>
+                                <div id="b-captures-bishop" class="captures-piece"></div>
+                                <div id="b-captures-queen" class="captures-piece"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex black-box">
+                        <div id="w-timer" class="timer">
+                            00:00
+                        </div>
+                        <div id="w-captures" class="captures">
+                            <div class="flex">
+                                <div id="w-captures-pawn" class="captures-piece"></div>
+                                <div id="w-captures-rook" class="captures-piece"></div>
+                                <div id="w-captures-knight" class="captures-piece"></div>
+                                <div id="w-captures-bishop" class="captures-piece"></div>
+                                <div id="w-captures-queen" class="captures-piece"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="game-history">
+                    <h2>Game History</h2>
+                    <div id="history">
+                    </div>
                 </div>
                 <h2>Status: <span id="status"></span></h2>
                 <label for="fen">FEN:
                     <input id="fen" type="text" value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR">
                 </label>
-                <!-- <button id="startBtn">Start</button>
-            <button id="clearBtn">Clear</button>
-            <button id="flipBtn">Flip</button>
-            <button id="checkBtn">Check</button>
-            <button id="statsBtn">Stats</button>
-            <button id="testBtn">Test</button> -->
                 <div class="game">
-                    <button id="startBtn" class="button">Start</button>
                     <button id="clearBtn" class="button">Clear</button>
                     <button id="flipBtn" class="button">Flip</button>
-                    <button id="fenBtn" class="button">FEN</button>
                 </div>
                 <label for="time">Time:</label><input id="time" type="number" value="5">
             </div>
         </div>
+    </div>
 
 
-        <script type="module" src="./js/GameManager.js"></script>
-        <!-- Testing -->
-        <script type="module" src="./tests/testsuite.js"></script>
-        <script type="module" src="./tests/chessboard.test.js"></script>
-        <script type="module" src="./tests/chess.test.js"></script>
+    <script type="module" src="./js/GameManager.js"></script>
+    <!-- Testing -->
+    <script type="module" src="./tests/testsuite.js"></script>
+    <script type="module" src="./tests/chessboard.test.js"></script>
+    <script type="module" src="./tests/chess.test.js"></script>
 </body>
 
 </html>

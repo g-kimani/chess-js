@@ -1,7 +1,7 @@
-import ChessBoard from "../chessboard.js";
+import ChessBoard from "../js/chessboard.js";
 import tests from "./testsuite.js";
-import { Rook } from "../pieces.js";
-import { normaliseFen, indexToRowCol } from "../helpers.js";
+import { Rook } from "../js/pieces.js";
+import { normaliseFen, indexToRowCol } from "../js/helpers.js";
 
 tests.testGroup("ChessBoard", 1, [
   // Test- check if chessboard initialises with 64 squares

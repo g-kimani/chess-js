@@ -11,38 +11,66 @@ class GameManger {
     this.display = new ChessBoard();
     this.players = [new Player("player1w", "w"), new Player("player2b", "b")];
     this.settings = {
-      time: 5,
+      time: 10,
       persistLastMove: true,
     };
+    this.started = false;
 
     this.selectedSquare = null;
     this.legalMoves = [];
     this.toMove = "w";
 
-    // without this, the game will not start and the board will not be interactive
-    this.display.start();
-    this._eventListeners();
+    this.run();
   }
+  run() {
+    this.display.start();
+    if (!this.started) {
+      this.showNewGameScreen();
+      document
+        .getElementById("time-control")
+        .addEventListener("change", (e) => {
+          console.log("🚀 ~ GameManger ~ .addEventListener ~ e:", e);
+          this.settings.time = e.target.value;
+          this.players.forEach((player) => {
+            player.timer.setTime(this.settings.time);
+          });
+        });
+      document.getElementById("new-game-btn").addEventListener("click", () => {
+        this.hideNewGameScreen();
+        this.showGameScreen();
+        this._eventListeners();
+        this.start();
+      });
+    }
+  }
+  showNewGameScreen() {
+    document.getElementById("new-game").classList.remove("hidden");
+  }
+  hideNewGameScreen() {
+    document.getElementById("new-game").classList.add("hidden");
+  }
+
+  showGameScreen() {
+    document.getElementById("game-controls").classList.remove("hidden");
+  }
+  hideGameScreen() {
+    document.getElementById("game-controls").classList.add("hidden");
+  }
+
   /**
    * Adds event listeners to the game
    */
   _eventListeners() {
     /** settings */
-    const timeInput = document.getElementById("time");
-    timeInput.addEventListener("change", (e) => {
-      this.settings.time = e.target.value;
-    });
     // const persistInput = document.getElementById("persist");
     // persistInput.addEventListener("change", (e) => {
     //   this.settings.persistLastMove = e.target.checked;
     // });
-    document.getElementById("fenBtn").addEventListener("click", () => {
-      const fen = this.game.fen();
-      document.getElementById("fen").value = fen;
-    });
-    document.getElementById("startBtn").addEventListener("click", () => {
-      this.start();
-    });
+    // ! This will be more useful for the setup position screen
+    // document.getElementById("fenBtn").addEventListener("click", () => {
+    //   const fen = this.game.fen();
+    //   document.getElementById("fen").value = fen;
+    // });
     document.getElementById("flipBtn").addEventListener("click", () => {
       this.display.flip();
     });
@@ -101,10 +129,10 @@ class GameManger {
    * Starts the game with the given FEN string
    */
   start() {
-    const fenInput = document.getElementById("fen").value;
     this.clearMoveHistory();
-    this.display.start(fenInput);
-    this.game.start(fenInput);
+    this.display.start(STARTING_POSITION);
+    this.game.start(STARTING_POSITION);
+    console.log(this.game.events.events);
     this.players.forEach((player) => {
       player.timer.setTime(this.settings.time);
     });
@@ -126,6 +154,7 @@ class GameManger {
   startPlayerTimer(color) {
     const player = this.getPlayer(color);
     player.timer.start();
+    player;
   }
 
   /**
@@ -299,7 +328,6 @@ class GameManger {
   getDisambiguation(move) {
     const { from, to, piece, before } = move;
     // ! I will need to think about a more efficient way to do this
-    // const pieces = this.game.getPieceLocations(piece.type, piece.color);
     const testGame = new Chess();
     testGame.load(before);
 
@@ -322,7 +350,6 @@ class GameManger {
     }
 
     // if more than one piece can move to the target square, disambiguate
-    const sameRank = piecesMoves.filter((p) => p[0] === from.row);
     const sameFile = piecesMoves.filter((p) => p[1] === from.col);
 
     if (sameFile.length > 1) {
@@ -418,6 +445,18 @@ class GameManger {
 
 window.onload = () => {
   const game = new GameManger();
+  window.onclick = function (event) {
+    if (!event.target.matches(".dropbtn")) {
+      var dropdowns = document.getElementsByClassName("dropdown-content");
+      var i;
+      for (i = 0; i < dropdowns.length; i++) {
+        var openDropdown = dropdowns[i];
+        if (openDropdown.classList.contains("show")) {
+          openDropdown.classList.remove("show");
+        }
+      }
+    }
+  };
 };
 
 export default GameManger;
